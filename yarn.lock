@@ -2477,7 +2477,7 @@ __metadata:
     "@testing-library/react-hooks": 8.0.1
     "@testing-library/user-event": 14.4.3
     "@types/amplitude-js": 8.16.2
-    "@types/base16": ^1.0.2
+    "@types/base16": ^1.0.5
     "@types/circular-dependency-plugin": 5.0.5
     "@types/cytoscape": ^3.19.9
     "@types/dat.gui": ^0.7.7
@@ -6071,6 +6071,13 @@ __metadata:
   version: 1.0.2
   resolution: "@types/base16@npm:1.0.2"
   checksum: 5bc587d45066dae6fb14a4a7f72e57044fa1a8057eed86d4005f9e38a0c38b83009828ac3072e6e9e4be1cf5d5032849690adf8cd51efd545fa281bee5cf0fa5
+  languageName: node
+  linkType: hard
+
+"@types/base16@npm:^1.0.5":
+  version: 1.0.5
+  resolution: "@types/base16@npm:1.0.5"
+  checksum: caa391944e9af95d395ad8a489ad7e6bc3b358f73f876215313e8a2f97a18d109d8ab3d6d92bd473d9a1c782639a82921a3c30124922f2492082b550a2e9f6a6
   languageName: node
   linkType: hard
 
