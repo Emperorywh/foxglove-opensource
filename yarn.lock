@@ -2489,7 +2489,7 @@ __metadata:
     "@types/moment-duration-format": 2.2.3
     "@types/nearley": 2.11.2
     "@types/prettier": 2.7.2
-    "@types/react": 17.0.53
+    "@types/react": 19.2.18
     "@types/react-autocomplete": 1.8.6
     "@types/react-dom": 17.0.18
     "@types/react-hover-observer": "workspace:*"
@@ -2558,7 +2558,7 @@ __metadata:
     notistack: 2.0.8
     path-browserify: 1.0.1
     prettier: 2.8.3
-    react: 17.0.2
+    react: 19.2.8
     react-autocomplete: "https://github.com/foxglove/react-autocomplete/raw/9717d597d7c78c316fb7ad3c2c57060c243530c2/react-autocomplete-9.9.9.tgz"
     react-colorful: 5.6.1
     react-dnd: 14.0.2
@@ -6723,7 +6723,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react@npm:*, @types/react@npm:17.0.53, @types/react@npm:^17":
+"@types/react@npm:*, @types/react@npm:^17":
   version: 17.0.53
   resolution: "@types/react@npm:17.0.53"
   dependencies:
@@ -6731,6 +6731,15 @@ __metadata:
     "@types/scheduler": "*"
     csstype: ^3.0.2
   checksum: dacfde02c260fd98bed2eb775ed0c7ce1397be4c0844f907a50763b081a4008f81f57071889a16eb1350ddcf0927f3cf1a6541702c8ad03de3c70383ef931e3f
+  languageName: node
+  linkType: hard
+
+"@types/react@npm:19.2.18":
+  version: 19.2.18
+  resolution: "@types/react@npm:19.2.18"
+  dependencies:
+    csstype: ^3.2.2
+  checksum: 01e42509fd2dbe05652bbe50f69883c79f6c5b24e5f306307e1f95eaf7eddf1cdd2646a1e056c6088d2c4403d5e2ab72226e31001c6564630529901514872fb1
   languageName: node
   linkType: hard
 
@@ -8896,12 +8905,12 @@ __metadata:
     "@foxglove/studio": "workspace:*"
     "@foxglove/studio-base": "workspace:*"
     "@pmmmwh/react-refresh-webpack-plugin": 0.5.10
-    "@types/react": 17.0.53
+    "@types/react": 19.2.18
     "@types/react-dom": 17.0.18
     clean-webpack-plugin: 4.0.0
     html-webpack-plugin: 5.5.0
     mathjs: 11.5.1
-    react: 17.0.2
+    react: 19.2.8
     react-dom: 17.0.2
     webpack: 5.75.0
     webpack-dev-server: 4.11.1
@@ -10863,6 +10872,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"csstype@npm:^3.2.2":
+  version: 3.2.3
+  resolution: "csstype@npm:3.2.3"
+  checksum: cb882521b3398958a1ce6ca98c011aec0bde1c77ecaf8a1dd4db3b112a189939beae3b1308243b2fe50fc27eb3edeb0f73a5a4d91d928765dc6d5ecc7bda92ee
+  languageName: node
+  linkType: hard
+
 "currently-unhandled@npm:^0.4.1":
   version: 0.4.1
   resolution: "currently-unhandled@npm:0.4.1"
@@ -11264,7 +11280,7 @@ __metadata:
     plist: 3.0.6
     pngjs: 6.0.0
     quicklookjs: 0.0.3
-    react: 17.0.2
+    react: 19.2.8
     react-dom: 17.0.2
     react-refresh-typescript: 2.0.8
     react-use: 17.4.0
@@ -21215,13 +21231,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react@npm:17.0.2":
-  version: 17.0.2
-  resolution: "react@npm:17.0.2"
-  dependencies:
-    loose-envify: ^1.1.0
-    object-assign: ^4.1.1
-  checksum: b254cc17ce3011788330f7bbf383ab653c6848902d7936a87b09d835d091e3f295f7e9dd1597c6daac5dc80f90e778c8230218ba8ad599f74adcc11e33b9d61b
+"react@npm:19.2.8":
+  version: 19.2.8
+  resolution: "react@npm:19.2.8"
+  checksum: cdedb4786eb3eb79c8fbaa6df299de61ecd9e1cd4c7cd52213b5af7a98c67d532fd6b14b9d546ae5851f3962437aec22ad17ee6e8e0450de11c595300c5e5bd7
   languageName: node
   linkType: hard
 
@@ -25319,7 +25332,7 @@ __metadata:
     html-webpack-plugin: 5.5.0
     idb: 7.1.1
     playwright: 1.30.0
-    react: 17.0.2
+    react: 19.2.8
     react-dom: 17.0.2
     react-i18next: 12.2.0
     serve-handler: 6.1.5
