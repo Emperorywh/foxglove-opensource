@@ -133,7 +133,7 @@
     "i18next": "22.4.10",
     "i18next-browser-languagedetector": "7.0.1",
     "idb": "7.1.1",
-    "idb-keyval": "6.2.0",
+    "idb-keyval": "6.3.0",
     "immer": "9.0.19",
     "intervals-fn": "3.0.3",
     "jest-diff": "29.4.2",
