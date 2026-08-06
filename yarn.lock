@@ -2556,7 +2556,7 @@ __metadata:
     "@foxglove/velodyne-cloud": 1.0.1
     "@foxglove/wasm-bz2": 0.1.1
     "@foxglove/wasm-lz4": 1.0.2
-    "@foxglove/ws-protocol": 0.5.2
+    "@foxglove/ws-protocol": 0.8.0
     "@foxglove/xmlrpc": 1.3.0
     "@mcap/core": 1.2.1
     "@mui/icons-material": 5.11.16
@@ -2835,14 +2835,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@foxglove/ws-protocol@npm:0.5.2":
-  version: 0.5.2
-  resolution: "@foxglove/ws-protocol@npm:0.5.2"
+"@foxglove/ws-protocol@npm:0.8.0":
+  version: 0.8.0
+  resolution: "@foxglove/ws-protocol@npm:0.8.0"
   dependencies:
     debug: ^4
-    eventemitter3: ^5.0.0
-    tslib: ^2.5.0
-  checksum: 39ff9665f652c3761155b6e3d12e9546c0c3cd5984631ac04ccf2089625f1bd896f66ca2796f1aa5cef8cbb93e9cd39af038f6a3a409f9931475a32b99337ac6
+    eventemitter3: ^5.0.1
+    tslib: ^2.8.1
+  checksum: 6cbf7077aa7e2683877e1da3b0e3eff822c8b7b394f1387a11a1b0caf77e9814cf530730aef1982a799064410eb3bd3138b64ce949a45ed197a066f1f911e833
   languageName: node
   linkType: hard
 
@@ -11057,6 +11057,13 @@ __metadata:
   version: 4.0.7
   resolution: "eventemitter3@npm:4.0.7"
   checksum: 1875311c42fcfe9c707b2712c32664a245629b42bb0a5a84439762dd0fd637fc54d078155ea83c2af9e0323c9ac13687e03cfba79b03af9f40c89b4960099374
+  languageName: node
+  linkType: hard
+
+"eventemitter3@npm:^5.0.1":
+  version: 5.0.4
+  resolution: "eventemitter3@npm:5.0.4"
+  checksum: bcbd2c3a9d2553c2289623ede8aab474d5c92bcbf18e5fe76f0e550c2b7801afb5a4351c7f11e8ee2379cca1ee48316aeb98fc3b946b7dd1f47a4c1ee8c4dcf2
   languageName: node
   linkType: hard
 
@@ -20267,6 +20274,13 @@ __metadata:
   version: 1.14.1
   resolution: "tslib@npm:1.14.1"
   checksum: dbe628ef87f66691d5d2959b3e41b9ca0045c3ee3c7c7b906cc1e328b39f199bb1ad9e671c39025bd56122ac57dfbf7385a94843b1cc07c60a4db74795829acd
+  languageName: node
+  linkType: hard
+
+"tslib@npm:^2.8.1":
+  version: 2.8.1
+  resolution: "tslib@npm:2.8.1"
+  checksum: e4aba30e632b8c8902b47587fd13345e2827fa639e7c3121074d5ee0880723282411a8838f830b55100cbe4517672f84a2472667d355b81e8af165a55dc6203a
   languageName: node
   linkType: hard
 
