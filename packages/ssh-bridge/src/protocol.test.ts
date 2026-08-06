@@ -19,17 +19,25 @@ describe("kindForName", () => {
     expect(kindForName("run.Bag.Active")).toBe("active");
   });
 
-  it("rejects other files", () => {
-    expect(kindForName("notes.txt")).toBeUndefined();
-    expect(kindForName("bag")).toBeUndefined();
-    expect(kindForName("x.bag.zip")).toBeUndefined();
+  it("classifies everything else as a regular file (v2)", () => {
+    expect(kindForName("notes.txt")).toBe("file");
+    expect(kindForName("bag")).toBe("file");
+    expect(kindForName("x.bag.zip")).toBe("file");
     expect(kindForName(".bag")).toBe("bag");
+    expect(kindForName(".env")).toBe("file");
   });
 });
 
 describe("validateDownloadPath", () => {
   it("accepts a .bag inside the listed directory", () => {
     expect(validateDownloadPath("/data/bags/a.bag", "/data/bags")).toEqual({ name: "a.bag" });
+  });
+
+  it("accepts regular files of any name (v2)", () => {
+    expect(validateDownloadPath("/data/bags/notes.txt", "/data/bags")).toEqual({
+      name: "notes.txt",
+    });
+    expect(validateDownloadPath("/data/bags/.env", "/data/bags")).toEqual({ name: ".env" });
   });
 
   it("accepts the root directory", () => {
@@ -46,8 +54,10 @@ describe("validateDownloadPath", () => {
     expect(validateDownloadPath("/data/bags/../secret.bag", "/data/bags")).toHaveProperty("error");
   });
 
-  it("rejects backslashes in the file name", () => {
-    expect(validateDownloadPath("/data/bags/a\\b.bag", "/data/bags")).toHaveProperty("error");
+  it("allows backslashes in the file name (v2: legal on Linux)", () => {
+    expect(validateDownloadPath("/data/bags/a\\b.bag", "/data/bags")).toEqual({
+      name: "a\\b.bag",
+    });
   });
 
   it("rejects .bag.active downloads", () => {

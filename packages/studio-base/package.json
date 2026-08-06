@@ -166,5 +166,8 @@
     "uuid": "9.0.1",
     "webpack": "5.90.0",
     "zustand": "4.4.1"
+  },
+  "dependencies": {
+    "fflate": "^0.8.2"
   }
 }

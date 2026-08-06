@@ -5,8 +5,39 @@
 import { Client, SFTPWrapper, Stats } from "ssh2";
 import { PassThrough, Readable } from "stream";
 
-import { ConnectOptions, Connector, SshError, SshFileInfo, SshSession } from "./SshSession";
+import {
+  ConnectOptions,
+  Connector,
+  SshEntryType,
+  SshError,
+  SshFileInfo,
+  SshSession,
+} from "./SshSession";
 import { MAX_BINARY_FRAME_BYTES } from "./protocol";
+
+/**
+ * Map SFTP attrs to a directory entry type (SPEC_server_file_export_zip.md §4.2).
+ * Servers that omit the permission/type bits report `mode` as undefined; those entries
+ * are treated as regular files (download-stage errors cover unreadable ones).
+ */
+export function entryTypeFromAttrs(attrs: Stats): SshEntryType {
+  // The @types/ssh2 declarations mark mode as always present, but servers may omit the
+  // permission/type bits, in which case ssh2 leaves it undefined.
+  const mode = attrs.mode as number | undefined;
+  if (mode == undefined) {
+    return "file";
+  }
+  if (attrs.isDirectory()) {
+    return "directory";
+  }
+  if (attrs.isSymbolicLink()) {
+    return "symlink";
+  }
+  if (attrs.isSocket() || attrs.isFIFO() || attrs.isBlockDevice() || attrs.isCharacterDevice()) {
+    return "other";
+  }
+  return "file";
+}
 
 // OpenSSH SFTP status codes relevant to us.
 const SSH_FX_NO_SUCH_FILE = 2;
@@ -74,7 +105,7 @@ class Ssh2Session implements SshSession {
             name: item.filename,
             size: item.attrs.size,
             mtimeMs: item.attrs.mtime * 1000,
-            isDirectory: item.attrs.isDirectory(),
+            entryType: entryTypeFromAttrs(item.attrs),
           })),
         );
       });

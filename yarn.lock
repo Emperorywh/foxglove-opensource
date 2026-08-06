@@ -2786,6 +2786,7 @@ __metadata:
     esbuild-loader: 2.21.0
     eventemitter3: 5.0.1
     fake-indexeddb: 4.0.2
+    fflate: ^0.8.2
     fork-ts-checker-webpack-plugin: 9.0.2
     fuzzysort: 2.0.4
     fzf: 0.5.2
@@ -11564,6 +11565,13 @@ __metadata:
   version: 5.0.3
   resolution: "fetch-retry@npm:5.0.3"
   checksum: b4eebc04bd41651417e89ae9287e5b9e5421970ce07058c6e1e22f7d9c1cd5f935fc39a328fd66b433247c0ae1bb8a6b2d48c073d5a9f911992f72c5d311b14d
+  languageName: node
+  linkType: hard
+
+"fflate@npm:^0.8.2":
+  version: 0.8.3
+  resolution: "fflate@npm:0.8.3"
+  checksum: a2a417e8fb5128b946cb397ab59a90e089057cba492f2c17a89c4af6ba8568b3da72ed36ef1efe901df7858a20964ce56e84d282e60498be1947fcc6133bc891
   languageName: node
   linkType: hard
 

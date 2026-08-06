@@ -6,12 +6,19 @@ import { Readable } from "stream";
 
 import { ErrorCode } from "./protocol";
 
+/**
+ * Directory entry type derived from SFTP attrs permission bits
+ * (SPEC_server_file_export_zip.md §4.2). Servers that omit the type bits are reported
+ * as "file" — genuinely unreadable entries then fail in the download phase instead.
+ */
+export type SshEntryType = "file" | "directory" | "symlink" | "other";
+
 /** A file as reported by the SSH layer, before protocol-level kind filtering. */
 export type SshFileInfo = {
   name: string;
   size: number;
   mtimeMs: number;
-  isDirectory: boolean;
+  entryType: SshEntryType;
 };
 
 /** Error with a protocol-level error code already mapped (see protocol.ts ERROR_CODES). */

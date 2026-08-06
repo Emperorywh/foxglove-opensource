@@ -210,14 +210,13 @@ export class ClientSession {
       const files = await ssh.list(path);
       const entries = [];
       for (const file of files) {
-        if (file.isDirectory) {
+        // v2 (SPEC_server_file_export_zip.md §4.2): list regular files and symlinks of
+        // any name; skip subdirectories and socket/fifo/device entries. Symlinks are
+        // classified by name only — the target is never stat'ed here.
+        if (file.entryType === "directory" || file.entryType === "other") {
           continue;
         }
-        const kind = kindForName(file.name);
-        if (kind == undefined) {
-          continue;
-        }
-        entries.push({ name: file.name, size: file.size, mtimeMs: file.mtimeMs, kind });
+        entries.push({ name: file.name, size: file.size, mtimeMs: file.mtimeMs, kind: kindForName(file.name) });
       }
       this.#lastListDir = path;
       this.#send({ type: "list", requestId: message.requestId, entries });

@@ -6,7 +6,13 @@ import { Readable } from "stream";
 
 import { BridgeTransport, ClientSession, SshBridge } from "./SshBridge";
 import { SshError, SshFileInfo, SshSession } from "./SshSession";
-import { IDLE_TIMEOUT_MS, MAX_BINARY_FRAME_BYTES, ServerMessage, WINDOW_BYTES } from "./protocol";
+import {
+  IDLE_TIMEOUT_MS,
+  MAX_BINARY_FRAME_BYTES,
+  PROTOCOL_VERSION,
+  ServerMessage,
+  WINDOW_BYTES,
+} from "./protocol";
 
 class FakeTransport implements BridgeTransport {
   public textMessages: ServerMessage[] = [];
@@ -127,7 +133,7 @@ function makeFixture(): Fixture & { connectAndList: () => Promise<void> } {
   };
 
   const connectAndList = async () => {
-    send({ type: "hello", version: 1 });
+    send({ type: "hello", version: PROTOCOL_VERSION });
     send({
       type: "connect",
       requestId: "c1",
@@ -147,7 +153,7 @@ function makeFixture(): Fixture & { connectAndList: () => Promise<void> } {
 describe("SshBridge frame state machine", () => {
   it("sends hello immediately on connection", () => {
     const { transport } = makeFixture();
-    expect(transport.textMessages).toEqual([{ type: "hello", version: 1 }]);
+    expect(transport.textMessages).toEqual([{ type: "hello", version: PROTOCOL_VERSION }]);
   });
 
   it("rejects a non-hello first message and closes", () => {
@@ -170,8 +176,8 @@ describe("SshBridge frame state machine", () => {
 
   it("rejects a duplicate hello and closes", () => {
     const { transport, session } = makeFixture();
-    session.handleText(JSON.stringify({ type: "hello", version: 1 }));
-    session.handleText(JSON.stringify({ type: "hello", version: 1 }));
+    session.handleText(JSON.stringify({ type: "hello", version: PROTOCOL_VERSION }));
+    session.handleText(JSON.stringify({ type: "hello", version: PROTOCOL_VERSION }));
     expect(transport.messagesOfType("error")).toEqual([
       expect.objectContaining({ code: "BAD_REQUEST" }),
     ]);
@@ -180,7 +186,7 @@ describe("SshBridge frame state machine", () => {
 
   it("rejects malformed JSON with BAD_REQUEST", () => {
     const { transport, session } = makeFixture();
-    session.handleText(JSON.stringify({ type: "hello", version: 1 }));
+    session.handleText(JSON.stringify({ type: "hello", version: PROTOCOL_VERSION }));
     session.handleText("{not json");
     expect(transport.messagesOfType("error")).toEqual([
       expect.objectContaining({ code: "BAD_REQUEST", message: "malformed message" }),
@@ -197,7 +203,7 @@ describe("SshBridge frame state machine", () => {
 
   it("rejects list before connect with DISCONNECTED", async () => {
     const { transport, session } = makeFixture();
-    session.handleText(JSON.stringify({ type: "hello", version: 1 }));
+    session.handleText(JSON.stringify({ type: "hello", version: PROTOCOL_VERSION }));
     session.handleText(JSON.stringify({ type: "list", requestId: "l1", path: "/data/bags" }));
     await flushAsync();
     expect(transport.messagesOfType("error")).toEqual([
@@ -207,15 +213,18 @@ describe("SshBridge frame state machine", () => {
 });
 
 describe("SshBridge connect and list", () => {
-  it("connects and lists only .bag/.bag.active files, case-insensitively", async () => {
+  it("lists regular files and symlinks of any kind, case-insensitively (v2)", async () => {
     const fixture = makeFixture();
     fixture.ssh.files = [
-      { name: "a.bag", size: 10, mtimeMs: 1000, isDirectory: false },
-      { name: "B.BAG", size: 20, mtimeMs: 2000, isDirectory: false },
-      { name: "c.bag.active", size: 30, mtimeMs: 3000, isDirectory: false },
-      { name: "D.BAG.ACTIVE", size: 40, mtimeMs: 4000, isDirectory: false },
-      { name: "notes.txt", size: 50, mtimeMs: 5000, isDirectory: false },
-      { name: "dir.bag", size: 0, mtimeMs: 6000, isDirectory: true },
+      { name: "a.bag", size: 10, mtimeMs: 1000, entryType: "file" },
+      { name: "B.BAG", size: 20, mtimeMs: 2000, entryType: "file" },
+      { name: "c.bag.active", size: 30, mtimeMs: 3000, entryType: "file" },
+      { name: "D.BAG.ACTIVE", size: 40, mtimeMs: 4000, entryType: "file" },
+      { name: "notes.txt", size: 50, mtimeMs: 5000, entryType: "file" },
+      { name: ".env", size: 60, mtimeMs: 6000, entryType: "file" },
+      // Symlinks are classified by name only; the target is never stat'ed.
+      { name: "latest.bag", size: 70, mtimeMs: 7000, entryType: "symlink" },
+      { name: "linked-log", size: 80, mtimeMs: 8000, entryType: "symlink" },
     ];
     await fixture.connectAndList();
     expect(fixture.transport.messagesOfType("connected")).toEqual([
@@ -230,7 +239,30 @@ describe("SshBridge connect and list", () => {
           { name: "B.BAG", size: 20, mtimeMs: 2000, kind: "bag" },
           { name: "c.bag.active", size: 30, mtimeMs: 3000, kind: "active" },
           { name: "D.BAG.ACTIVE", size: 40, mtimeMs: 4000, kind: "active" },
+          { name: "notes.txt", size: 50, mtimeMs: 5000, kind: "file" },
+          { name: ".env", size: 60, mtimeMs: 6000, kind: "file" },
+          { name: "latest.bag", size: 70, mtimeMs: 7000, kind: "bag" },
+          { name: "linked-log", size: 80, mtimeMs: 8000, kind: "file" },
         ],
+      },
+    ]);
+  });
+
+  it("does not list subdirectories or socket/fifo/device entries", async () => {
+    const fixture = makeFixture();
+    fixture.ssh.files = [
+      { name: "dir.bag", size: 0, mtimeMs: 1000, entryType: "directory" },
+      { name: "sub", size: 0, mtimeMs: 2000, entryType: "directory" },
+      { name: "app.sock", size: 0, mtimeMs: 3000, entryType: "other" },
+      { name: "pipe", size: 0, mtimeMs: 4000, entryType: "other" },
+      { name: "a.bag", size: 10, mtimeMs: 5000, entryType: "file" },
+    ];
+    await fixture.connectAndList();
+    expect(fixture.transport.messagesOfType("list")).toEqual([
+      {
+        type: "list",
+        requestId: "l1",
+        entries: [{ name: "a.bag", size: 10, mtimeMs: 5000, kind: "bag" }],
       },
     ]);
   });
@@ -252,7 +284,7 @@ describe("SshBridge connect and list", () => {
       },
     });
     const session = bridge.handleConnection(transport);
-    session.handleText(JSON.stringify({ type: "hello", version: 1 }));
+    session.handleText(JSON.stringify({ type: "hello", version: PROTOCOL_VERSION }));
     session.handleText(
       JSON.stringify({
         type: "connect",
@@ -298,7 +330,7 @@ describe("SshBridge connect and list", () => {
     const second = new FakeTransport();
     bridge.handleConnection(second);
     expect(transport.closed).toBe(true);
-    expect(second.messagesOfType("hello")).toEqual([{ type: "hello", version: 1 }]);
+    expect(second.messagesOfType("hello")).toEqual([{ type: "hello", version: PROTOCOL_VERSION }]);
   });
 });
 
@@ -327,9 +359,33 @@ describe("SshBridge download", () => {
     ]);
   });
 
+  it("allows downloading regular files and names with backslashes (v2)", async () => {
+    const fixture = makeFixture();
+    fixture.ssh.fileData.set("/data/bags/notes.txt", Buffer.from("notes"));
+    fixture.ssh.fileData.set("/data/bags/a\\b.bag", Buffer.from("backslash"));
+    await fixture.connectAndList();
+    fixture.session.handleText(
+      JSON.stringify({ type: "download", requestId: "d1", path: "/data/bags/notes.txt" }),
+    );
+    await flushAsync();
+    fixture.session.handleText(
+      JSON.stringify({ type: "download", requestId: "d2", path: "/data/bags/a\\b.bag" }),
+    );
+    await flushAsync();
+    expect(fixture.transport.messagesOfType("error")).toEqual([]);
+    expect(fixture.transport.messagesOfType("fileStart")).toEqual([
+      { type: "fileStart", requestId: "d1", name: "notes.txt", size: 5 },
+      { type: "fileStart", requestId: "d2", name: "a\\b.bag", size: 9 },
+    ]);
+    expect(fixture.transport.messagesOfType("fileEnd")).toEqual([
+      { type: "fileEnd", requestId: "d1", bytes: 5 },
+      { type: "fileEnd", requestId: "d2", bytes: 9 },
+    ]);
+  });
+
   it("rejects downloads before any list", async () => {
     const fixture = makeFixture();
-    fixture.session.handleText(JSON.stringify({ type: "hello", version: 1 }));
+    fixture.session.handleText(JSON.stringify({ type: "hello", version: PROTOCOL_VERSION }));
     fixture.session.handleText(
       JSON.stringify({
         type: "connect",

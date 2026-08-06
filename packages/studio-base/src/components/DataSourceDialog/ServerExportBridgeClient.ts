@@ -3,8 +3,8 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 /**
- * Browser client for the local SSH bridge (packages/ssh-bridge), protocol v1.
- * See docs/SPEC_server_bag_export.md §4.3.
+ * Browser client for the local SSH bridge (packages/ssh-bridge), protocol v2.
+ * See docs/SPEC_server_bag_export.md §4.3 and docs/SPEC_server_file_export_zip.md §4.
  *
  * The protocol types are mirrored here (rather than imported from the bridge package)
  * because the bridge package targets Node.js; the two sides are version-checked at
@@ -13,14 +13,14 @@
 
 export const BRIDGE_URL = "ws://127.0.0.1:8765";
 
-const PROTOCOL_VERSION = 1;
+const PROTOCOL_VERSION = 2;
 const HELLO_TIMEOUT_MS = 5000;
 
 export type ServerExportListEntry = {
   name: string;
   size: number;
   mtimeMs: number;
-  kind: "bag" | "active";
+  kind: "bag" | "active" | "file";
 };
 
 /** Error codes sent by the bridge, plus client-local failures. */
@@ -189,7 +189,7 @@ export class ServerExportBridgeClient {
     }
   }
 
-  /** List a remote directory; only .bag / .bag.active entries are returned by the bridge. */
+  /** List a remote directory; v2 returns regular files and symlinks of any name. */
   public async list(path: string): Promise<ServerExportListEntry[]> {
     const message = await this.#request({
       type: "list",

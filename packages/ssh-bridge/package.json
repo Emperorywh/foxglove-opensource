@@ -1,7 +1,7 @@
 {
   "name": "@foxglove/ssh-bridge",
   "version": "1.0.0",
-  "description": "Local WebSocket-to-SSH/SFTP bridge for exporting ROS bag files from a server",
+  "description": "Local WebSocket-to-SSH/SFTP bridge for exporting files from a server",
   "license": "MPL-2.0",
   "private": true,
   "repository": {

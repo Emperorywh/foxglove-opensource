@@ -8,6 +8,7 @@ import {
   Alert,
   Button,
   Checkbox,
+  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -35,6 +36,14 @@ import {
   ServerExportErrorCode,
   ServerExportListEntry,
 } from "./ServerExportBridgeClient";
+import {
+  ServerExportZipWriter,
+  ZipSizeLimitExceededError,
+  createZipWriter,
+  resolveZipNameConflict,
+  zipFileName,
+  zipSelectionTooLarge,
+} from "./serverExportZip";
 
 const LOCAL_STORAGE_PREFIX = "foxglove.serverExport.";
 
@@ -45,13 +54,18 @@ type Step = "connect" | "browse" | "exporting" | "summary";
 
 type ExportItemStatus = "pending" | "active" | "success" | "failed" | "skipped" | "notStarted";
 
+/** Failure reasons shown in the summary: bridge codes plus client-local zip semantics. */
+type ExportItemReasonCode = ServerExportErrorCode | "CANCELED" | "ZIP_ABORTED" | "ZIP_TOO_LARGE";
+
 type ExportItem = {
   name: string;
   /** Best-known size: from list, corrected to the actual byte count as the transfer reports it. */
   size: number;
+  /** From the directory listing; used as the zip entry's mtime (clamped by the writer). */
+  mtimeMs: number;
   status: ExportItemStatus;
   bytesWritten: number;
-  reasonCode?: ServerExportErrorCode | "CANCELED";
+  reasonCode?: ExportItemReasonCode;
   reasonDetail?: string;
 };
 
@@ -62,6 +76,9 @@ type ExportSession = {
   stopQueue: boolean;
   consecutiveLocalFailures: number;
 };
+
+/** Single file = bare export (original flow); ≥2 files = one streamed zip (SPEC §5). */
+type ExportMode = "single" | "zip";
 
 const useStyles = makeStyles()((theme) => ({
   content: {
@@ -106,6 +123,10 @@ const useStyles = makeStyles()((theme) => ({
   disabledFileName: {
     color: theme.palette.text.disabled,
   },
+  nameCell: {
+    minWidth: 0,
+    overflow: "hidden",
+  },
   monoName: {
     overflow: "hidden",
     textOverflow: "ellipsis",
@@ -138,10 +159,7 @@ function formatDuration(totalSeconds: number): string {
   return `${minutes}:${ss}`;
 }
 
-function errorText(
-  t: TFunction<"openDialog">,
-  code: ServerExportErrorCode | "CANCELED",
-): string {
+function errorText(t: TFunction<"openDialog">, code: ExportItemReasonCode): string {
   switch (code) {
     case "AUTH_FAILED":
       return t("serverExportErrorAuthFailed");
@@ -167,6 +185,10 @@ function errorText(
       return t("serverExportErrorLocalWrite");
     case "CANCELED":
       return t("serverExportErrorCanceled");
+    case "ZIP_ABORTED":
+      return t("serverExportErrorZipAborted");
+    case "ZIP_TOO_LARGE":
+      return t("serverExportErrorZipTooLarge");
     case "IO_ERROR":
     case "BAD_REQUEST":
     default:
@@ -213,6 +235,7 @@ export default function ServerExport(): JSX.Element {
   // ----- Browse state -----
   const [entries, setEntries] = useState<ServerExportListEntry[]>([]);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
+  const [filter, setFilter] = useState("");
   const [dirName, setDirName] = useState<string>();
   const [connectionLost, setConnectionLost] = useState<string>();
 
@@ -220,6 +243,10 @@ export default function ServerExport(): JSX.Element {
   const [items, setItemsState] = useState<ExportItem[]>([]);
   const [canceling, setCanceling] = useState(false);
   const [conflictCount, setConflictCount] = useState<number>();
+  /** Zip file being written / produced by the current export session (zip mode only). */
+  const [activeZipName, setActiveZipName] = useState<string>();
+  /** Partial zip that could not be deleted after a voided export (SPEC §8.6). */
+  const [leftoverZip, setLeftoverZip] = useState<string>();
   // Re-render on a slow tick while exporting so the speed/ETA display stays fresh.
   const [, setStatsTick] = useState(0);
 
@@ -230,6 +257,10 @@ export default function ServerExport(): JSX.Element {
   const openAfterExportRef = useRef(false);
   const conflictResolveRef = useRef<(choice: ConflictChoice) => void>();
   const speedSamplesRef = useRef<{ time: number; bytes: number }[]>([]);
+  const exportModeRef = useRef<ExportMode>("single");
+  /** Base zip name of the current export session; retries reuse it (SPEC §5.4). */
+  const zipNameRef = useRef<string>();
+  const zipWriterRef = useRef<ServerExportZipWriter>();
   const currentWritableRef = useRef<{
     writable: FileSystemWritableFileStream;
     name: string;
@@ -281,6 +312,12 @@ export default function ServerExport(): JSX.Element {
       if (client != undefined) {
         client.cancelDownload();
         client.disconnect();
+      }
+      const zipWriter = zipWriterRef.current;
+      if (zipWriter != undefined) {
+        zipWriterRef.current = undefined;
+        // Deletes the partial zip via the writer's onAbort cleanup (SPEC §7).
+        void zipWriter.abort().catch(() => undefined);
       }
       const current = currentWritableRef.current;
       if (current != undefined) {
@@ -605,6 +642,198 @@ export default function ServerExport(): JSX.Element {
     [finishIfAllSucceeded, normalizedBagPath, updateItem],
   );
 
+  /**
+   * Zip mode (SPEC §5/§7): ≥2 selected files are streamed into a single zip container.
+   * Any failure or cancellation voids the whole package — the partial zip is deleted,
+   * previously completed items join the failed group, and retry re-runs everything.
+   */
+  const runZipExport = useCallback(
+    async (files: ExportItem[], opts: { openAfter: boolean }) => {
+      const client = clientRef.current;
+      const dirHandle = dirHandleRef.current;
+      if (client == undefined || dirHandle == undefined) {
+        return;
+      }
+      const session: ExportSession = {
+        cancelRequested: false,
+        stopQueue: false,
+        consecutiveLocalFailures: 0,
+      };
+      exportSessionRef.current = session;
+      setCanceling(false);
+      setStep("exporting");
+
+      // The zip name is generated once per export session and reused across retries
+      // (SPEC §5.4); a leftover partial zip gets an automatic " (n)" suffix instead.
+      zipNameRef.current ??= zipFileName(new Date());
+      const zipName = await resolveZipNameConflict(zipNameRef.current, async (name) => {
+        try {
+          await dirHandle.getFileHandle(name);
+          return true;
+        } catch {
+          return false; // NotFoundError: no conflict
+        }
+      });
+
+      let writable: FileSystemWritableFileStream;
+      try {
+        const fileHandle = await dirHandle.getFileHandle(zipName, { create: true });
+        writable = await fileHandle.createWritable();
+      } catch (err) {
+        // The single local product cannot be created — nothing has started (SPEC §7).
+        setAlertText(errorText(tRef.current, "LOCAL_WRITE_ERROR"));
+        for (const file of files) {
+          updateItem(file.name, {
+            status: "notStarted",
+            bytesWritten: 0,
+            reasonDetail: err instanceof Error ? err.message : String(err),
+          });
+        }
+        exportSessionRef.current = undefined;
+        setStep("summary");
+        return;
+      }
+
+      setActiveZipName(zipName);
+      const writer = createZipWriter(writable, {
+        onAbort: async () => {
+          try {
+            await dirHandle.removeEntry(zipName);
+          } catch (err) {
+            // A leftover partial zip is reported in the summary for manual cleanup
+            // (SPEC §8.6); NotFoundError just means it was never flushed to disk.
+            if (!(err instanceof DOMException && err.name === "NotFoundError")) {
+              setLeftoverZip(zipName);
+            }
+          }
+        },
+      });
+      zipWriterRef.current = writer;
+
+      /**
+       * Whole-package void (SPEC §7.3): abort the writer (deleting the partial zip),
+       * then regroup — items before `currentIndex` were completed but lose their
+       * product; the trigger item keeps its own error; later items never started.
+       */
+      const voidZip = async (
+        currentIndex: number,
+        trigger: { code: ExportItemReasonCode; detail?: string } | undefined,
+        completedCode: ExportItemReasonCode,
+        currentWritten: number,
+      ): Promise<void> => {
+        zipWriterRef.current = undefined;
+        await writer.abort();
+        for (let index = 0; index < files.length; index++) {
+          const file = files[index];
+          if (file == undefined) {
+            continue;
+          }
+          if (index < currentIndex) {
+            updateItem(file.name, { status: "failed", reasonCode: completedCode, bytesWritten: 0 });
+          } else if (index === currentIndex && trigger != undefined) {
+            updateItem(file.name, {
+              status: "failed",
+              reasonCode: trigger.code,
+              reasonDetail: trigger.detail,
+              bytesWritten: currentWritten,
+            });
+          } else {
+            updateItem(file.name, { status: "notStarted", bytesWritten: 0 });
+          }
+        }
+      };
+
+      // Stable flag object: set from inside the download handlers (closures in the loop
+      // below) when the zip writer's size guard trips.
+      const zipGuard = { exceeded: false };
+      let voided = false;
+      // The cancel flag is flipped by onCancelExport — read it through the ref so TS
+      // doesn't narrow it to its initial value.
+      const isCancelRequested = () => exportSessionRef.current?.cancelRequested === true;
+      for (let index = 0; index < files.length; index++) {
+        const file = files[index];
+        if (file == undefined) {
+          continue;
+        }
+        if (isCancelRequested()) {
+          await voidZip(index, undefined, "CANCELED", 0);
+          voided = true;
+          break;
+        }
+        updateItem(file.name, { status: "active", bytesWritten: 0 });
+        let written = 0;
+        try {
+          const outcome = await client.download(`${normalizedBagPath}/${file.name}`, {
+            onStart: (_name, size) => {
+              // Correct this file's share of the progress denominator as soon as the
+              // real size is known — symlink list sizes can be wildly off (SPEC §5.3).
+              updateItem(file.name, { size });
+              writer.beginEntry(file.name, file.mtimeMs);
+            },
+            onData: async (chunk) => {
+              try {
+                await writer.pushEntryChunk(chunk);
+              } catch (err) {
+                // The client wraps local onData failures as LOCAL_WRITE_ERROR; remember
+                // the size guard so the catch below can classify it correctly.
+                zipGuard.exceeded = zipGuard.exceeded || err instanceof ZipSizeLimitExceededError;
+                throw err;
+              }
+              written += chunk.byteLength;
+              updateItem(file.name, { bytesWritten: written });
+            },
+          });
+          if (isCancelRequested() || outcome.status === "canceled") {
+            // SPEC §8.7: the zip is voided no matter whether fileEnd or canceled won
+            // the race; the "keep the completed file" rule is single-file mode only.
+            await voidZip(index, { code: "CANCELED" }, "CANCELED", written);
+            voided = true;
+            break;
+          }
+          await writer.endEntry();
+          updateItem(file.name, {
+            status: "success",
+            bytesWritten: outcome.bytes,
+            size: outcome.bytes,
+          });
+        } catch (err) {
+          zipGuard.exceeded = zipGuard.exceeded || err instanceof ZipSizeLimitExceededError;
+          const code: ExportItemReasonCode = zipGuard.exceeded
+            ? "ZIP_TOO_LARGE"
+            : err instanceof ServerExportError
+              ? err.code
+              : "LOCAL_WRITE_ERROR";
+          await voidZip(
+            index,
+            { code, detail: err instanceof Error ? err.message : String(err) },
+            "ZIP_ABORTED",
+            written,
+          );
+          voided = true;
+          break;
+        }
+      }
+
+      if (!voided) {
+        try {
+          await writer.finalize();
+        } catch (err) {
+          // The size guard tripped on the central directory, or the final close hit a
+          // local write failure: the completed package is voided as well (SPEC §5.6/§7).
+          const code: ExportItemReasonCode =
+            err instanceof ZipSizeLimitExceededError ? "ZIP_TOO_LARGE" : "LOCAL_WRITE_ERROR";
+          await voidZip(files.length, undefined, code, 0);
+        }
+      }
+
+      zipWriterRef.current = undefined;
+      exportSessionRef.current = undefined;
+      setStep("summary");
+      await finishIfAllSucceeded(opts);
+    },
+    [finishIfAllSucceeded, normalizedBagPath, updateItem],
+  );
+
   const checkConflictsAndExport = useCallback(
     async (files: ExportItem[], opts: { openAfter: boolean }) => {
       const dirHandle = dirHandleRef.current;
@@ -642,18 +871,30 @@ export default function ServerExport(): JSX.Element {
     async ({ openAfter }: { openAfter: boolean }) => {
       openAfterExportRef.current = openAfter;
       const chosen: ExportItem[] = entries
-        .filter((entry) => entry.kind === "bag" && selected.has(entry.name))
+        .filter((entry) => entry.kind !== "active" && selected.has(entry.name))
         .map((entry) => ({
           name: entry.name,
           size: entry.size,
+          mtimeMs: entry.mtimeMs,
           status: "pending",
           bytesWritten: 0,
         }));
       setItems(() => chosen);
       setAlertText(undefined);
-      await checkConflictsAndExport(chosen, { openAfter });
+      setLeftoverZip(undefined);
+      if (chosen.length >= 2) {
+        // SPEC §5.5: zip mode skips the per-file conflict prompt entirely — only the
+        // zip name is probed. A fresh export session gets a fresh zip name.
+        exportModeRef.current = "zip";
+        zipNameRef.current = undefined;
+        await runZipExport(chosen, { openAfter });
+      } else {
+        exportModeRef.current = "single";
+        setActiveZipName(undefined);
+        await checkConflictsAndExport(chosen, { openAfter });
+      }
     },
-    [entries, selected, setItems, checkConflictsAndExport],
+    [entries, selected, setItems, checkConflictsAndExport, runZipExport],
   );
 
   const onCancelExport = useCallback(() => {
@@ -689,8 +930,23 @@ export default function ServerExport(): JSX.Element {
     const retryFiles = itemsRef.current.filter(
       (item) => item.status === "failed" || item.status === "notStarted",
     );
+    if (exportModeRef.current === "zip") {
+      // SPEC §7: a zip-mode retry re-runs the whole package; the failed + not-started
+      // groups are the entire selection, and the session's zip name is reused.
+      const files = retryFiles.map((item) => ({
+        ...item,
+        status: "pending" as const,
+        bytesWritten: 0,
+        reasonCode: undefined,
+        reasonDetail: undefined,
+      }));
+      setItems((prev) => prev.map((item) => files.find((f) => f.name === item.name) ?? item));
+      setLeftoverZip(undefined);
+      await runZipExport(files, { openAfter: openAfterExportRef.current });
+      return;
+    }
     await checkConflictsAndExport(retryFiles, { openAfter: openAfterExportRef.current });
-  }, [checkConflictsAndExport, connectAndList, connectionLost, replaceClient, t]);
+  }, [checkConflictsAndExport, connectAndList, connectionLost, replaceClient, runZipExport, setItems, t]);
 
   const onDone = useCallback(() => {
     replaceClient(undefined);
@@ -699,10 +955,44 @@ export default function ServerExport(): JSX.Element {
 
   // ----- Derived rendering state -----
 
-  const selectable = useMemo(() => entries.filter((entry) => entry.kind === "bag"), [entries]);
-  const selectedCount = selected.size;
-  const allSelected = selectable.length > 0 && selectedCount === selectable.length;
-  const someSelected = selectedCount > 0 && !allSelected;
+  // File-name substring filter (SPEC §6.1): case-insensitive, applied live. Selections
+  // are recorded by name and survive filter changes.
+  const normalizedFilter = filter.toLowerCase();
+  const visibleEntries = useMemo(
+    () =>
+      normalizedFilter === ""
+        ? entries
+        : entries.filter((entry) => entry.name.toLowerCase().includes(normalizedFilter)),
+    [entries, normalizedFilter],
+  );
+  const visibleSelectable = useMemo(
+    () => visibleEntries.filter((entry) => entry.kind !== "active"),
+    [visibleEntries],
+  );
+  const selectedEntries = useMemo(
+    () => entries.filter((entry) => selected.has(entry.name)),
+    [entries, selected],
+  );
+  // Selection counts/sizes always cover every checked item, including ones currently
+  // hidden by the filter (SPEC §6.1).
+  const selectedCount = selectedEntries.length;
+  const selectedTotalSize = selectedEntries.reduce((acc, entry) => acc + entry.size, 0);
+  const outsideFilterCount =
+    normalizedFilter === ""
+      ? 0
+      : selectedEntries.filter((entry) => !entry.name.toLowerCase().includes(normalizedFilter))
+          .length;
+  // The header checkbox acts on the *filtered* selectable rows only.
+  const allSelected =
+    visibleSelectable.length > 0 &&
+    visibleSelectable.every((entry) => selected.has(entry.name));
+  const someSelected =
+    !allSelected && visibleSelectable.some((entry) => selected.has(entry.name));
+
+  const singleSelectedEntry = selectedCount === 1 ? selectedEntries[0] : undefined;
+  // SPEC §5.6: selections at or over the container limit are rejected up front —
+  // the write-time guard in the zip writer stays the correctness backstop.
+  const overZipLimit = selectedCount >= 2 && zipSelectionTooLarge(selectedTotalSize);
 
   const progress = useMemo(() => {
     let total = 0;
@@ -788,18 +1078,25 @@ export default function ServerExport(): JSX.Element {
   ).length;
 
   const exportDisabled =
-    selectedCount === 0 || dirName == undefined || connectionLost != undefined;
-  const exportAndOpenDisabled = selectedCount !== 1 || dirName == undefined || connectionLost != undefined;
+    selectedCount === 0 || dirName == undefined || connectionLost != undefined || overZipLimit;
+  const exportAndOpenDisabled =
+    singleSelectedEntry?.kind !== "bag" || dirName == undefined || connectionLost != undefined;
 
   // Explain why the export buttons are disabled (disabled buttons need a wrapper span for
   // the tooltip to receive mouse events).
   let exportTooltip = "";
   if (dirName == undefined) {
     exportTooltip = t("serverExportSelectDirectoryFirst");
+  } else if (overZipLimit) {
+    exportTooltip = t("serverExportErrorZipTooLarge");
   }
-  let exportAndOpenTooltip = exportTooltip;
-  if (exportAndOpenTooltip === "" && selectedCount > 1) {
-    exportAndOpenTooltip = t("serverExportMultiFileOpenDisabled");
+  let exportAndOpenTooltip = dirName == undefined ? t("serverExportSelectDirectoryFirst") : "";
+  if (exportAndOpenTooltip === "") {
+    if (selectedCount > 1) {
+      exportAndOpenTooltip = t("serverExportMultiFileOpenDisabled");
+    } else if (selectedCount === 1 && singleSelectedEntry?.kind !== "bag") {
+      exportAndOpenTooltip = t("serverExportNonBagOpenDisabled");
+    }
   }
 
   // ----- Render helpers -----
@@ -936,13 +1233,16 @@ export default function ServerExport(): JSX.Element {
             });
           }}
         />
-        <Typography
-          variant="body2"
-          className={`${classes.monoName} ${isActive ? classes.disabledFileName : ""}`}
-          title={entry.name}
-        >
-          {entry.name}
-        </Typography>
+        <Stack direction="row" alignItems="center" gap={1} className={classes.nameCell}>
+          <Typography
+            variant="body2"
+            className={`${classes.monoName} ${isActive ? classes.disabledFileName : ""}`}
+            title={entry.name}
+          >
+            {entry.name}
+          </Typography>
+          {entry.kind === "bag" && <Chip label="BAG" size="small" color="primary" variant="outlined" />}
+        </Stack>
         <Typography variant="body2" color="text.secondary" noWrap>
           {formatBytes(entry.size)}
         </Typography>
@@ -1018,15 +1318,36 @@ export default function ServerExport(): JSX.Element {
             </Link>
           </Stack>
         </Stack>
+        <TextField
+          size="small"
+          placeholder={t("serverExportFilterPlaceholder")}
+          value={filter}
+          disabled={connectionLost != undefined}
+          onChange={(event) => {
+            setFilter(event.target.value);
+          }}
+          fullWidth
+          variant="outlined"
+        />
         <div className={classes.fileList}>
           <div className={`${classes.fileRow} ${classes.headerRow}`}>
             <Checkbox
               size="small"
-              disabled={selectable.length === 0 || connectionLost != undefined}
+              disabled={visibleSelectable.length === 0 || connectionLost != undefined}
               checked={allSelected}
               indeterminate={someSelected}
               onChange={(_event, isChecked) => {
-                setSelected(isChecked ? new Set(selectable.map((entry) => entry.name)) : new Set());
+                setSelected((prev) => {
+                  const next = new Set(prev);
+                  for (const entry of visibleSelectable) {
+                    if (isChecked) {
+                      next.add(entry.name);
+                    } else {
+                      next.delete(entry.name);
+                    }
+                  }
+                  return next;
+                });
               }}
             />
             <Typography variant="subtitle2">{t("serverExportColumnName")}</Typography>
@@ -1034,7 +1355,7 @@ export default function ServerExport(): JSX.Element {
             <Typography variant="subtitle2">{t("serverExportColumnModified")}</Typography>
             <span />
           </div>
-          {entries.map(renderFileRow)}
+          {visibleEntries.map(renderFileRow)}
           {entries.length === 0 && (
             <Stack padding={4} alignItems="center">
               <Typography variant="body2" color="text.secondary">
@@ -1042,7 +1363,23 @@ export default function ServerExport(): JSX.Element {
               </Typography>
             </Stack>
           )}
+          {entries.length > 0 && visibleEntries.length === 0 && (
+            <Stack padding={4} alignItems="center">
+              <Typography variant="body2" color="text.secondary">
+                {t("serverExportNoMatchingFiles")}
+              </Typography>
+            </Stack>
+          )}
         </div>
+        <Typography variant="body2" color="text.secondary">
+          {t("serverExportSelectionSummary", {
+            count: selectedCount,
+            size: formatBytes(selectedTotalSize),
+          })}
+          {outsideFilterCount > 0
+            ? ` ${t("serverExportSelectionOutsideFilter", { count: outsideFilterCount })}`
+            : ""}
+        </Typography>
         <Stack direction="row" alignItems="center" gap={2}>
           <Button
             variant="outlined"
@@ -1091,9 +1428,11 @@ export default function ServerExport(): JSX.Element {
                   void onStartExport({ openAfter: false });
                 }}
               >
-                {selectedCount === 1
-                  ? t("serverExportExportFile")
-                  : t("serverExportExportFiles", { count: selectedCount })}
+                {selectedCount >= 2
+                  ? t("serverExportExportZip", { count: selectedCount })
+                  : selectedCount === 1
+                    ? t("serverExportExportFile")
+                    : t("serverExportExportFiles", { count: selectedCount })}
               </Button>
             </span>
           </Tooltip>
@@ -1107,6 +1446,11 @@ export default function ServerExport(): JSX.Element {
       <div className={classes.content}>
         <Typography variant="h6">{t("serverExportExporting")}</Typography>
         <Stack gap={1}>
+          {activeZipName != undefined && (
+            <Typography variant="body2" color="text.secondary" className={classes.monoName}>
+              {t("serverExportZipTarget", { name: activeZipName })}
+            </Typography>
+          )}
           <LinearProgress
             variant="determinate"
             value={progress.total > 0 ? (progress.completed / progress.total) * 100 : 0}
@@ -1173,11 +1517,18 @@ export default function ServerExport(): JSX.Element {
     const skipped = items.filter((item) => item.status === "skipped");
     const failed = items.filter((item) => item.status === "failed");
     const notStarted = items.filter((item) => item.status === "notStarted");
+    const successTitle =
+      exportModeRef.current === "zip" && activeZipName != undefined
+        ? t("serverExportSucceededZipped", { name: activeZipName })
+        : t("serverExportSucceeded");
     return (
       <>
         <div className={classes.content}>
           {alertText != undefined && <Alert severity="error">{alertText}</Alert>}
-          {renderSummaryGroup(t("serverExportSucceeded"), succeeded, { showReason: false })}
+          {leftoverZip != undefined && (
+            <Alert severity="warning">{t("serverExportLeftoverZip", { name: leftoverZip })}</Alert>
+          )}
+          {renderSummaryGroup(successTitle, succeeded, { showReason: false })}
           {renderSummaryGroup(t("serverExportSkipped"), skipped, { showReason: false })}
           {renderSummaryGroup(t("serverExportFailed"), failed, { showReason: true })}
           {renderSummaryGroup(t("serverExportNotStarted"), notStarted, { showReason: false })}

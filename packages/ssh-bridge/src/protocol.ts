@@ -3,15 +3,16 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 /**
- * Wire protocol v1 between the browser (Foxglove Studio server-export view) and the
- * local SSH bridge. See docs/SPEC_server_bag_export.md §4.3.
+ * Wire protocol v2 between the browser (Foxglove Studio server-export view) and the
+ * local SSH bridge. See docs/SPEC_server_bag_export.md §4.3 and
+ * docs/SPEC_server_file_export_zip.md §4.
  *
  * Client → bridge messages are JSON text frames. Bridge → client messages are JSON text
  * frames plus binary frames carrying file contents between `fileStart` and the terminal
  * message (`fileEnd` / `canceled` / `error`) of a download.
  */
 
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
 
 /** Maximum size of a single binary frame carrying file data. */
 export const MAX_BINARY_FRAME_BYTES = 1024 * 1024;
@@ -39,7 +40,7 @@ export const ERROR_CODES = [
 
 export type ErrorCode = (typeof ERROR_CODES)[number];
 
-export type ListEntryKind = "bag" | "active";
+export type ListEntryKind = "bag" | "active" | "file";
 
 export type ListEntry = {
   name: string;
@@ -76,10 +77,11 @@ export type ServerMessage =
   | { type: "sshClosed"; reason: "idle" | "error"; message: string };
 
 /**
- * Classify a file name per SPEC §4.3: `.bag.active` (case-insensitive) → "active",
- * `.bag` → "bag", anything else is not listed/downloadable.
+ * Classify a file name per SPEC_server_file_export_zip.md §4.1: `.bag.active`
+ * (case-insensitive) → "active", `.bag` → "bag", anything else → "file" (v2 lists and
+ * downloads regular files of any name; only `.bag.active` stays non-downloadable).
  */
-export function kindForName(name: string): ListEntryKind | undefined {
+export function kindForName(name: string): ListEntryKind {
   const lower = name.toLowerCase();
   if (lower.endsWith(".bag.active")) {
     return "active";
@@ -87,13 +89,17 @@ export function kindForName(name: string): ListEntryKind | undefined {
   if (lower.endsWith(".bag")) {
     return "bag";
   }
-  return undefined;
+  return "file";
 }
 
 /**
  * Validate a client-supplied download path against the directory of the most recent
  * successful `list` (SPEC §4.3: the bridge never trusts arbitrary client paths).
  * Returns the bare file name on success.
+ *
+ * v2 (SPEC_server_file_export_zip.md §4.3): any listed non-`.bag.active` name may be
+ * downloaded. Only `/` is rejected as a path separator — a backslash is a legal file
+ * name character on Linux.
  */
 export function validateDownloadPath(
   path: string,
@@ -104,11 +110,11 @@ export function validateDownloadPath(
     return { error: `path must be inside the last listed directory ${listDir}` };
   }
   const name = path.slice(prefix.length);
-  if (name.length === 0 || name.includes("/") || name.includes("\\")) {
+  if (name.length === 0 || name.includes("/")) {
     return { error: "file name must not contain path separators" };
   }
-  if (kindForName(name) !== "bag") {
-    return { error: "only .bag files (not .bag.active) may be downloaded" };
+  if (kindForName(name) === "active") {
+    return { error: ".bag.active files may not be downloaded" };
   }
   return { name };
 }
