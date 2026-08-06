@@ -2580,7 +2580,7 @@ __metadata:
     react-window: 1.8.8
     readable-stream: 4.3.0
     rehype-raw: 6.1.1
-    reselect: 4.1.7
+    reselect: 5.2.0
     sanitize-html: 2.8.1
     seedrandom: 3.0.5
     shallowequal: 1.1.0
@@ -21779,10 +21779,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"reselect@npm:4.1.7":
-  version: 4.1.7
-  resolution: "reselect@npm:4.1.7"
-  checksum: 738d8e2b8f0dca154ad29de6a209c9fbca2d70ae6788fd85df87f2c74b95a65bbf2d16d43a9e2faff39de34d17a29d706ba08a6b2ee5660c09589edbd19af7e1
+"reselect@npm:5.2.0":
+  version: 5.2.0
+  resolution: "reselect@npm:5.2.0"
+  checksum: b274c69ba657cfe3531ae32ba332a6bae62050bb5addd7d42a66625fa85db0d82a93d69f0b6df1db345717fbcb8e9d311e843b09051afebd2b06da539f3510bb
   languageName: node
   linkType: hard
 
