@@ -473,6 +473,20 @@ export default function Start(): JSX.Element {
           void analytics.logEvent(AppEvent.DIALOG_SELECT_VIEW, { type: "live" });
         },
       },
+      {
+        key: "open-server",
+        text: t("openServer"),
+        secondaryText: t("openServerDescription"),
+        icon: (
+          <SvgIcon fontSize="large" color="primary" viewBox="0 0 2048 2048">
+            <path d="M128 128h1792v640H128V128zm256 192v256h256V320H384zM128 896h1792v640H128V896zm256 192v256h256v-256H384zM128 1792h1792v128H128v-128z" />
+          </SvgIcon>
+        ),
+        onClick: () => {
+          dialogActions.dataSource.open("serverExport");
+          void analytics.logEvent(AppEvent.DIALOG_SELECT_VIEW, { type: "server-export" });
+        },
+      },
     ];
   }, [analytics, dialogActions.dataSource, t]);
 

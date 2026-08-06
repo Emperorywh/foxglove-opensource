@@ -10,6 +10,25 @@ storybook-static/
 # for jest --coverage
 coverage/
 
+# tsc --build (yarn build:packages) outputs emitted next to sources
+# (packages whose tsconfig has no outDir; other packages emit to dist/ above)
+packages/studio-base/**/*.js
+packages/studio-base/**/*.js.map
+packages/studio-base/**/*.d.ts
+packages/studio-base/**/*.d.ts.map
+packages/studio-web/**/*.js
+packages/studio-web/**/*.js.map
+packages/studio-web/**/*.d.ts
+packages/studio-web/**/*.d.ts.map
+packages/theme/**/*.js
+packages/theme/**/*.js.map
+packages/theme/**/*.d.ts
+packages/theme/**/*.d.ts.map
+packages/eslint-plugin-studio/**/*.js
+packages/eslint-plugin-studio/**/*.js.map
+packages/eslint-plugin-studio/**/*.d.ts
+packages/eslint-plugin-studio/**/*.d.ts.map
+
 # Yarn
 .yarn/*
 !.yarn/patches

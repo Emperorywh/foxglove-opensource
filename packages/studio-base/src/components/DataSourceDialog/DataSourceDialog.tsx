@@ -20,9 +20,10 @@ import { useWorkspaceActions } from "@foxglove/studio-base/context/Workspace/use
 import { AppEvent } from "@foxglove/studio-base/services/IAnalytics";
 
 import Connection from "./Connection";
+import ServerExport from "./ServerExport";
 import Start from "./Start";
 
-const DataSourceDialogItems = ["start", "file", "demo", "remote", "connection"] as const;
+const DataSourceDialogItems = ["start", "file", "demo", "remote", "connection", "serverExport"] as const;
 export type DataSourceDialogItem = (typeof DataSourceDialogItems)[number];
 
 type DataSourceDialogProps = {
@@ -111,6 +112,11 @@ export function DataSourceDialog(props: DataSourceDialogProps): JSX.Element {
         return {
           title: "Open new connection",
           component: <Connection />,
+        };
+      case "serverExport":
+        return {
+          title: "Open server",
+          component: <ServerExport />,
         };
       default:
         return {
