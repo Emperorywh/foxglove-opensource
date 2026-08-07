@@ -41,6 +41,17 @@ export interface SshSession {
   list(dir: string): Promise<SshFileInfo[]>;
   /** Size of a single file, for the fileStart message. */
   fileSize(path: string): Promise<number>;
+  /**
+   * Canonicalize a path (resolves `.`, `..` and symlink components). Throws SshError
+   * (SPEC_server_file_browser.md §4.2).
+   */
+  realpath(path: string): Promise<string>;
+  /**
+   * stat following symlinks; used to classify symlink entries at list time
+   * (SPEC_server_file_browser.md §4.3). Under follow semantics the returned entryType is
+   * never "symlink" (a symlink loop resolves to a stat failure).
+   */
+  statFollow(path: string): Promise<{ size: number; mtimeMs: number; entryType: SshEntryType }>;
   /** Read stream for a file. Stream errors are SshErrors where mappable. */
   openReadStream(path: string): Readable;
   /** Close the session. Subsequent onClose callbacks still fire but are ignored by the bridge. */

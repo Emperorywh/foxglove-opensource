@@ -2,12 +2,13 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { Connector, SshSession } from "./SshSession";
+import { Connector, SshFileInfo, SshSession } from "./SshSession";
 import {
   ClientMessage,
   CONNECT_TIMEOUT_MS,
   ErrorCode,
   IDLE_TIMEOUT_MS,
+  ListEntry,
   MAX_BINARY_FRAME_BYTES,
   PROTOCOL_VERSION,
   ServerMessage,
@@ -33,6 +34,13 @@ const nullLogger: BridgeLogger = {
   info: () => {},
   error: () => {},
 };
+
+/**
+ * Upper bound on concurrent SFTP stat requests while classifying symlinks at list time
+ * (SPEC_server_file_browser.md §4.3) — an unbounded fan-out could saturate the SFTP
+ * channel on a directory full of links.
+ */
+const STAT_CONCURRENCY = 32;
 
 type ActiveDownload = {
   requestId: string;
@@ -61,7 +69,12 @@ export class ClientSession {
   #ssh: SshSession | undefined;
   /** True once we initiated the SSH close ourselves (disconnect / re-connect / idle). */
   #sshCloseExpected = false;
-  #lastListDir: string | undefined;
+  /**
+   * Canonical directories the client has successfully listed in this SSH session
+   * (SPEC_server_file_browser.md §4.4). Downloads must resolve to a direct child of one
+   * of these. The set belongs to the SSH session lifecycle and is cleared with it.
+   */
+  #listedDirs = new Set<string>();
   #download: ActiveDownload | undefined;
   #idleTimer: ReturnType<typeof setTimeout> | undefined;
   #destroyed = false;
@@ -94,7 +107,7 @@ export class ClientSession {
     if (this.#destroyed) {
       return;
     }
-    // The client never sends binary frames in protocol v1.
+    // The client never sends binary frames in protocol v3.
     this.#send({ type: "error", code: "BAD_REQUEST", message: "unexpected binary frame" });
   }
 
@@ -171,7 +184,6 @@ export class ClientSession {
   #handleConnect(message: Extract<ClientMessage, { type: "connect" }>): void {
     // Repeated connect on the same socket: drop the old SSH session and reconnect (SPEC §13.22).
     this.#closeSsh();
-    this.#lastListDir = undefined;
     this.#log.info(`connect ${message.username}@${message.host}:${message.port}`);
     this.#bridge
       .connect({
@@ -190,7 +202,17 @@ export class ClientSession {
           this.#ssh = session;
           this.#sshCloseExpected = false;
           session.onClose(() => { this.#handleSshClosed(); });
-          this.#send({ type: "connected", requestId: message.requestId });
+          // v3 (SPEC_server_file_browser.md §4.1): the browser starts browsing at the
+          // login user's home; a failed realpath falls back to "/" without blocking the
+          // connection. (#send is a no-op if the session was destroyed meanwhile.)
+          session.realpath(".").then(
+            (home) => {
+              this.#send({ type: "connected", requestId: message.requestId, home });
+            },
+            () => {
+              this.#send({ type: "connected", requestId: message.requestId, home: "/" });
+            },
+          );
         },
         (err: unknown) => {
           this.#sendError(message.requestId, err);
@@ -204,25 +226,89 @@ export class ClientSession {
       this.#send({ type: "error", requestId: message.requestId, code: "DISCONNECTED", message: "not connected" });
       return;
     }
-    // Normalize: strip trailing slashes (root "/" stays as-is).
-    const path = message.path.length > 1 ? message.path.replace(/\/+$/, "") : message.path;
     try {
+      // v3 (SPEC_server_file_browser.md §4.2): the request path is canonicalized on the
+      // bridge (a failed realpath maps to an error, usually NO_SUCH_PATH) and the
+      // response carries the canonical result; breadcrumbs, history, the selection set
+      // and the visited-dirs set are all keyed by canonical paths.
+      const path = await ssh.realpath(message.path);
       const files = await ssh.list(path);
-      const entries = [];
-      for (const file of files) {
-        // v2 (SPEC_server_file_export_zip.md §4.2): list regular files and symlinks of
-        // any name; skip subdirectories and socket/fifo/device entries. Symlinks are
-        // classified by name only — the target is never stat'ed here.
-        if (file.entryType === "directory" || file.entryType === "other") {
-          continue;
-        }
-        entries.push({ name: file.name, size: file.size, mtimeMs: file.mtimeMs, kind: kindForName(file.name) });
-      }
-      this.#lastListDir = path;
-      this.#send({ type: "list", requestId: message.requestId, entries });
+      const entries = await this.#buildListEntries(ssh, path, files);
+      this.#listedDirs.add(path);
+      this.#send({ type: "list", requestId: message.requestId, path, entries });
     } catch (err: unknown) {
       this.#sendError(message.requestId, err);
     }
+  }
+
+  /**
+   * Assemble list entries (SPEC_server_file_browser.md §4.3): directories go down as
+   * navigable "dir" entries; sockets/fifos/devices are omitted; each symlink is
+   * stat-followed (failures caught per entry, concurrency bounded) — a directory target
+   * becomes "dir", a regular-file target is classified by name with the target's
+   * size/mtime, a special target is omitted (known undownloadable), and a failed stat
+   * degrades to the link's own metadata as a file.
+   */
+  async #buildListEntries(ssh: SshSession, dir: string, files: SshFileInfo[]): Promise<ListEntry[]> {
+    const entries: (ListEntry | undefined)[] = files.map((file) => {
+      if (file.entryType === "directory") {
+        return { name: file.name, size: file.size, mtimeMs: file.mtimeMs, kind: "dir" as const };
+      }
+      if (file.entryType === "file") {
+        return { name: file.name, size: file.size, mtimeMs: file.mtimeMs, kind: kindForName(file.name) };
+      }
+      return undefined; // "other" is never listed; "symlink" placeholders resolve below
+    });
+
+    const symlinkIndexes: number[] = [];
+    files.forEach((file, index) => {
+      if (file.entryType === "symlink") {
+        symlinkIndexes.push(index);
+      }
+    });
+
+    // Bounded worker pool over the symlink indexes; the cursor advances synchronously
+    // before each await, so workers never pick the same entry.
+    let cursor = 0;
+    const worker = async (): Promise<void> => {
+      while (cursor < symlinkIndexes.length) {
+        const index = symlinkIndexes[cursor];
+        cursor += 1;
+        const file = index == undefined ? undefined : files[index];
+        if (index == undefined || file == undefined) {
+          continue;
+        }
+        const path = `${dir === "/" ? "" : dir}/${file.name}`;
+        try {
+          const target = await ssh.statFollow(path);
+          if (target.entryType === "directory") {
+            entries[index] = { name: file.name, size: target.size, mtimeMs: target.mtimeMs, kind: "dir" };
+          } else if (target.entryType === "other") {
+            entries[index] = undefined; // special target: known undownloadable, omit
+          } else {
+            entries[index] = {
+              name: file.name,
+              size: target.size,
+              mtimeMs: target.mtimeMs,
+              kind: kindForName(file.name),
+            };
+          }
+        } catch {
+          // Broken/looping/unreadable link: degrade to a file carrying the link's own
+          // metadata; a genuinely unreadable target fails in the download phase.
+          entries[index] = {
+            name: file.name,
+            size: file.size,
+            mtimeMs: file.mtimeMs,
+            kind: kindForName(file.name),
+          };
+        }
+      }
+    };
+    await Promise.all(
+      Array.from({ length: Math.min(STAT_CONCURRENCY, symlinkIndexes.length) }, async () => { await worker(); }),
+    );
+    return entries.filter((entry): entry is ListEntry => entry != undefined);
   }
 
   #handleDownload(message: Extract<ClientMessage, { type: "download" }>): void {
@@ -240,16 +326,9 @@ export class ClientSession {
       });
       return;
     }
-    if (this.#lastListDir == undefined) {
-      this.#send({
-        type: "error",
-        requestId: message.requestId,
-        code: "BAD_REQUEST",
-        message: "no directory has been listed yet",
-      });
-      return;
-    }
-    const validated = validateDownloadPath(message.path, this.#lastListDir);
+    // v3 (SPEC_server_file_browser.md §4.4): any direct child of a directory listed in
+    // this SSH session may be downloaded.
+    const validated = validateDownloadPath(message.path, this.#listedDirs);
     if ("error" in validated) {
       this.#send({
         type: "error",
@@ -259,7 +338,9 @@ export class ClientSession {
       });
       return;
     }
-    const path = `${this.#lastListDir === "/" ? "" : this.#lastListDir}/${validated.name}`;
+    const slashIndex = message.path.lastIndexOf("/");
+    const parent = slashIndex === 0 ? "/" : message.path.slice(0, slashIndex);
+    const path = `${parent === "/" ? "" : parent}/${validated.name}`;
     this.#log.info(`download ${path}`);
     ssh.fileSize(path).then(
       (size) => {
@@ -362,7 +443,8 @@ export class ClientSession {
     }
     const expected = this.#sshCloseExpected;
     this.#ssh = undefined;
-    this.#lastListDir = undefined;
+    // The visited-dirs set belongs to the SSH session lifecycle (SPEC §4.4).
+    this.#listedDirs.clear();
     const download = this.#download;
     if (download != undefined && !download.terminalSent) {
       download.terminalSent = true;
@@ -383,6 +465,7 @@ export class ClientSession {
 
   #closeSsh(): void {
     const ssh = this.#ssh;
+    this.#listedDirs.clear();
     if (ssh != undefined) {
       this.#sshCloseExpected = true;
       this.#ssh = undefined;

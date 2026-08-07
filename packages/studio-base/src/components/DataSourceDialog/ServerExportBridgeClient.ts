@@ -3,8 +3,9 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 /**
- * Browser client for the local SSH bridge (packages/ssh-bridge), protocol v2.
- * See docs/SPEC_server_bag_export.md §4.3 and docs/SPEC_server_file_export_zip.md §4.
+ * Browser client for the local SSH bridge (packages/ssh-bridge), protocol v3.
+ * See docs/SPEC_server_bag_export.md §4.3, docs/SPEC_server_file_export_zip.md §4 and
+ * docs/SPEC_server_file_browser.md §4.
  *
  * The protocol types are mirrored here (rather than imported from the bridge package)
  * because the bridge package targets Node.js; the two sides are version-checked at
@@ -13,14 +14,14 @@
 
 export const BRIDGE_URL = "ws://127.0.0.1:8765";
 
-const PROTOCOL_VERSION = 2;
+const PROTOCOL_VERSION = 3;
 const HELLO_TIMEOUT_MS = 5000;
 
 export type ServerExportListEntry = {
   name: string;
   size: number;
   mtimeMs: number;
-  kind: "bag" | "active" | "file";
+  kind: "bag" | "active" | "file" | "dir";
 };
 
 /** Error codes sent by the bridge, plus client-local failures. */
@@ -172,34 +173,44 @@ export class ServerExportBridgeClient {
     this.#installHandlers(ws);
   }
 
-  /** SSH connect (10s timeout enforced bridge-side). */
+  /** SSH connect (10s timeout enforced bridge-side). Resolves with the login user's
+   *  home directory — the browse start directory (SPEC_server_file_browser.md §4.1). */
   public async connectSsh(opts: {
     host: string;
     port: number;
     username: string;
     password: string;
-  }): Promise<void> {
+  }): Promise<{ home: string }> {
     const message = await this.#request({
       type: "connect",
       requestId: this.#allocRequestId(),
       ...opts,
     });
-    if (message.type !== "connected") {
+    if (message.type !== "connected" || typeof message.home !== "string") {
       throw new ServerExportError("BAD_REQUEST", "unexpected response to connect");
     }
+    return { home: message.home };
   }
 
-  /** List a remote directory; v2 returns regular files and symlinks of any name. */
-  public async list(path: string): Promise<ServerExportListEntry[]> {
+  /**
+   * List a remote directory. Resolves with the canonical (bridge-realpath'ed) path and
+   * its entries — regular files, symlinks classified by their target, and directories
+   * (v3, SPEC_server_file_browser.md §4.2/§4.3).
+   */
+  public async list(path: string): Promise<{ path: string; entries: ServerExportListEntry[] }> {
     const message = await this.#request({
       type: "list",
       requestId: this.#allocRequestId(),
       path,
     });
-    if (message.type !== "list" || !Array.isArray(message.entries)) {
+    if (
+      message.type !== "list" ||
+      !Array.isArray(message.entries) ||
+      typeof message.path !== "string"
+    ) {
       throw new ServerExportError("BAD_REQUEST", "unexpected response to list");
     }
-    return message.entries as ServerExportListEntry[];
+    return { path: message.path, entries: message.entries as ServerExportListEntry[] };
   }
 
   /**

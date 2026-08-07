@@ -3,16 +3,16 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 /**
- * Wire protocol v2 between the browser (Foxglove Studio server-export view) and the
- * local SSH bridge. See docs/SPEC_server_bag_export.md §4.3 and
- * docs/SPEC_server_file_export_zip.md §4.
+ * Wire protocol v3 between the browser (Foxglove Studio server-export view) and the
+ * local SSH bridge. See docs/SPEC_server_bag_export.md §4.3,
+ * docs/SPEC_server_file_export_zip.md §4 and docs/SPEC_server_file_browser.md §4.
  *
  * Client → bridge messages are JSON text frames. Bridge → client messages are JSON text
  * frames plus binary frames carrying file contents between `fileStart` and the terminal
  * message (`fileEnd` / `canceled` / `error`) of a download.
  */
 
-export const PROTOCOL_VERSION = 2;
+export const PROTOCOL_VERSION = 3;
 
 /** Maximum size of a single binary frame carrying file data. */
 export const MAX_BINARY_FRAME_BYTES = 1024 * 1024;
@@ -40,7 +40,7 @@ export const ERROR_CODES = [
 
 export type ErrorCode = (typeof ERROR_CODES)[number];
 
-export type ListEntryKind = "bag" | "active" | "file";
+export type ListEntryKind = "bag" | "active" | "file" | "dir";
 
 export type ListEntry = {
   name: string;
@@ -68,8 +68,8 @@ export type ClientMessage =
 
 export type ServerMessage =
   | { type: "hello"; version: number }
-  | { type: "connected"; requestId: string }
-  | { type: "list"; requestId: string; entries: ListEntry[] }
+  | { type: "connected"; requestId: string; home: string }
+  | { type: "list"; requestId: string; path: string; entries: ListEntry[] }
   | { type: "fileStart"; requestId: string; name: string; size: number }
   | { type: "fileEnd"; requestId: string; bytes: number }
   | { type: "canceled"; requestId: string }
@@ -80,6 +80,7 @@ export type ServerMessage =
  * Classify a file name per SPEC_server_file_export_zip.md §4.1: `.bag.active`
  * (case-insensitive) → "active", `.bag` → "bag", anything else → "file" (v2 lists and
  * downloads regular files of any name; only `.bag.active` stays non-downloadable).
+ * Directories are classified structurally at list time ("dir", v3) — never by name.
  */
 export function kindForName(name: string): ListEntryKind {
   const lower = name.toLowerCase();
@@ -93,25 +94,34 @@ export function kindForName(name: string): ListEntryKind {
 }
 
 /**
- * Validate a client-supplied download path against the directory of the most recent
- * successful `list` (SPEC §4.3: the bridge never trusts arbitrary client paths).
- * Returns the bare file name on success.
+ * Validate a client-supplied download path against the set of directories the client
+ * has successfully listed in this SSH session (SPEC_server_file_browser.md §4.4: the
+ * bridge never trusts arbitrary client paths; "can list" ⟺ "can download"). Returns the
+ * bare file name on success.
  *
- * v2 (SPEC_server_file_export_zip.md §4.3): any listed non-`.bag.active` name may be
- * downloaded. Only `/` is rejected as a path separator — a backslash is a legal file
- * name character on Linux.
+ * The path's parent directory (everything before the last `/`; the parent of `/x` is
+ * `/`) must be in `listedDirs`. The file name must be non-empty, contain no `/`, not be
+ * `.`/`..`, and not classify as `.bag.active`. A backslash is a legal file name
+ * character on Linux and stays allowed.
  */
 export function validateDownloadPath(
   path: string,
-  listDir: string,
+  listedDirs: ReadonlySet<string>,
 ): { name: string } | { error: string } {
-  const prefix = listDir.endsWith("/") ? listDir : `${listDir}/`;
-  if (!path.startsWith(prefix)) {
-    return { error: `path must be inside the last listed directory ${listDir}` };
+  const slashIndex = path.lastIndexOf("/");
+  if (slashIndex < 0) {
+    return { error: "path must be absolute" };
   }
-  const name = path.slice(prefix.length);
+  const parent = slashIndex === 0 ? "/" : path.slice(0, slashIndex);
+  if (!listedDirs.has(parent)) {
+    return { error: "path must be inside a directory listed in this session" };
+  }
+  const name = path.slice(slashIndex + 1);
   if (name.length === 0 || name.includes("/")) {
-    return { error: "file name must not contain path separators" };
+    return { error: "file name must not be empty or contain path separators" };
+  }
+  if (name === "." || name === "..") {
+    return { error: "file name must not be . or .." };
   }
   if (kindForName(name) === "active") {
     return { error: ".bag.active files may not be downloaded" };

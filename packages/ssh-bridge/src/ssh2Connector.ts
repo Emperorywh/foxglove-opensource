@@ -117,6 +117,30 @@ class Ssh2Session implements SshSession {
     return stats.size;
   }
 
+  public async realpath(path: string): Promise<string> {
+    return await new Promise<string>((resolve, reject) => {
+      this.#sftp.realpath(path, (err, absPath) => {
+        if (err != undefined) {
+          reject(mapSftpError(err));
+          return;
+        }
+        resolve(absPath);
+      });
+    });
+  }
+
+  public async statFollow(
+    path: string,
+  ): Promise<{ size: number; mtimeMs: number; entryType: SshEntryType }> {
+    // sftp.stat follows symlinks (unlike lstat), so the entry type describes the target.
+    const stats = await this.#stat(path);
+    return {
+      size: stats.size,
+      mtimeMs: stats.mtime * 1000,
+      entryType: entryTypeFromAttrs(stats),
+    };
+  }
+
   public openReadStream(path: string): Readable {
     const raw = this.#sftp.createReadStream(path, {
       highWaterMark: MAX_BINARY_FRAME_BYTES,

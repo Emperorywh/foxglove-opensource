@@ -29,47 +29,71 @@ describe("kindForName", () => {
 });
 
 describe("validateDownloadPath", () => {
-  it("accepts a .bag inside the listed directory", () => {
-    expect(validateDownloadPath("/data/bags/a.bag", "/data/bags")).toEqual({ name: "a.bag" });
-  });
+  const listed = (...dirs: string[]) => new Set(dirs);
 
-  it("accepts regular files of any name (v2)", () => {
-    expect(validateDownloadPath("/data/bags/notes.txt", "/data/bags")).toEqual({
+  it("accepts direct children of multiple listed directories (v3 visited-dirs)", () => {
+    expect(validateDownloadPath("/data/bags/a.bag", listed("/data/bags"))).toEqual({
+      name: "a.bag",
+    });
+    expect(validateDownloadPath("/logs/run.log", listed("/data/bags", "/logs"))).toEqual({
+      name: "run.log",
+    });
+    expect(validateDownloadPath("/data/bags/notes.txt", listed("/data/bags"))).toEqual({
       name: "notes.txt",
     });
-    expect(validateDownloadPath("/data/bags/.env", "/data/bags")).toEqual({ name: ".env" });
+    expect(validateDownloadPath("/data/bags/.env", listed("/data/bags"))).toEqual({ name: ".env" });
   });
 
-  it("accepts the root directory", () => {
-    expect(validateDownloadPath("/a.bag", "/")).toEqual({ name: "a.bag" });
+  it("accepts a root-level file when the root directory was listed", () => {
+    expect(validateDownloadPath("/a.bag", listed("/"))).toEqual({ name: "a.bag" });
   });
 
-  it("rejects paths outside the listed directory", () => {
-    expect(validateDownloadPath("/etc/passwd.bag", "/data/bags")).toHaveProperty("error");
-    expect(validateDownloadPath("/data/bags-other/a.bag", "/data/bags")).toHaveProperty("error");
+  it("rejects paths in directories that were never listed", () => {
+    expect(validateDownloadPath("/etc/passwd.bag", listed("/data/bags"))).toHaveProperty("error");
+    expect(validateDownloadPath("/data/bags-other/a.bag", listed("/data/bags"))).toHaveProperty(
+      "error",
+    );
+    // A listed child directory does not authorize its parent, and vice versa.
+    expect(validateDownloadPath("/data/a.bag", listed("/data/bags"))).toHaveProperty("error");
+    expect(validateDownloadPath("/data/bags/sub/a.bag", listed("/data/bags"))).toHaveProperty(
+      "error",
+    );
   });
 
-  it("rejects subdirectory traversal", () => {
-    expect(validateDownloadPath("/data/bags/sub/a.bag", "/data/bags")).toHaveProperty("error");
-    expect(validateDownloadPath("/data/bags/../secret.bag", "/data/bags")).toHaveProperty("error");
+  it("rejects subdirectory and .. traversal", () => {
+    expect(
+      validateDownloadPath("/data/bags/../secret.bag", listed("/data/bags", "/data")),
+    ).toHaveProperty("error");
+    expect(validateDownloadPath("/data/bags/./a.bag", listed("/data/bags"))).toHaveProperty(
+      "error",
+    );
   });
 
-  it("allows backslashes in the file name (v2: legal on Linux)", () => {
-    expect(validateDownloadPath("/data/bags/a\\b.bag", "/data/bags")).toEqual({
+  it("rejects file names that are empty, dotted, or contain separators", () => {
+    expect(validateDownloadPath("/data/bags/", listed("/data/bags"))).toHaveProperty("error");
+    expect(validateDownloadPath("/data/bags/.", listed("/data/bags"))).toHaveProperty("error");
+    expect(validateDownloadPath("/data/bags/..", listed("/data/bags", "/data"))).toHaveProperty(
+      "error",
+    );
+    expect(validateDownloadPath("a.bag", listed("/"))).toHaveProperty("error");
+  });
+
+  it("allows backslashes in the file name (legal on Linux)", () => {
+    expect(validateDownloadPath("/data/bags/a\\b.bag", listed("/data/bags"))).toEqual({
       name: "a\\b.bag",
     });
   });
 
   it("rejects .bag.active downloads", () => {
-    expect(validateDownloadPath("/data/bags/a.bag.active", "/data/bags")).toHaveProperty("error");
+    expect(validateDownloadPath("/data/bags/a.bag.active", listed("/data/bags"))).toHaveProperty(
+      "error",
+    );
   });
 
   it("accepts case-insensitive .bag", () => {
-    expect(validateDownloadPath("/data/bags/A.BAG", "/data/bags")).toEqual({ name: "A.BAG" });
-  });
-
-  it("rejects a bare directory path", () => {
-    expect(validateDownloadPath("/data/bags/", "/data/bags")).toHaveProperty("error");
+    expect(validateDownloadPath("/data/bags/A.BAG", listed("/data/bags"))).toEqual({
+      name: "A.BAG",
+    });
   });
 });
 
@@ -104,7 +128,9 @@ describe("parseClientMessage", () => {
   });
 
   it("parses list and download", () => {
-    expect(parseClientMessage(JSON.stringify({ type: "list", requestId: "2", path: "/d" }))).toEqual({
+    expect(
+      parseClientMessage(JSON.stringify({ type: "list", requestId: "2", path: "/d" })),
+    ).toEqual({
       type: "list",
       requestId: "2",
       path: "/d",

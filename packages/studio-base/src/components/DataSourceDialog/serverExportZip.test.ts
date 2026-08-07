@@ -7,8 +7,11 @@ import { unzipSync } from "fflate";
 import {
   MAX_ZIP_BYTES,
   ZipSizeLimitExceededError,
+  commonAncestorDir,
   createZipWriter,
+  parentDir,
   resolveZipNameConflict,
+  zipEntryName,
   zipFileName,
   zipSelectionTooLarge,
 } from "./serverExportZip";
@@ -325,5 +328,83 @@ describe("zipSelectionTooLarge", () => {
     expect(zipSelectionTooLarge(MAX_ZIP_BYTES)).toBe(true);
     expect(zipSelectionTooLarge(MAX_ZIP_BYTES + 1)).toBe(true);
     expect(zipSelectionTooLarge(10, 10)).toBe(true);
+  });
+});
+
+describe("parentDir", () => {
+  it("returns the parent of a canonical path", () => {
+    expect(parentDir("/data/bags/a.bag")).toBe("/data/bags");
+    expect(parentDir("/a.bag")).toBe("/");
+    expect(parentDir("/")).toBe("/");
+  });
+});
+
+describe("commonAncestorDir (SPEC_server_file_browser.md §5.1)", () => {
+  it("is the directory itself when all selections share one parent", () => {
+    expect(commonAncestorDir(["/data/bags", "/data/bags"])).toBe("/data/bags");
+    expect(commonAncestorDir(["/"])).toBe("/");
+  });
+
+  it("is the longest common segment prefix across directories", () => {
+    expect(commonAncestorDir(["/data/bags", "/data/logs"])).toBe("/data");
+    expect(commonAncestorDir(["/data/bags/2026", "/data/bags", "/data/bags/2025"])).toBe(
+      "/data/bags",
+    );
+  });
+
+  it("compares by segments, not string prefixes: /a/b and /a/bc share only /a", () => {
+    expect(commonAncestorDir(["/a/b", "/a/bc"])).toBe("/a");
+  });
+
+  it("degrades to / when the directories share no segment", () => {
+    expect(commonAncestorDir(["/home/u", "/var/log"])).toBe("/");
+    expect(commonAncestorDir([])).toBe("/");
+  });
+});
+
+describe("zipEntryName (SPEC_server_file_browser.md §5.1)", () => {
+  it("degrades to the bare name when the ancestor is the parent directory", () => {
+    expect(zipEntryName("/data/bags/a.bag", "/data/bags")).toBe("a.bag");
+  });
+
+  it("produces relative paths for cross-directory selections", () => {
+    expect(zipEntryName("/data/bags/2026/a.bag", "/data")).toBe("bags/2026/a.bag");
+    expect(zipEntryName("/data/logs/run.log", "/data")).toBe("logs/run.log");
+  });
+
+  it("strips only the leading slash when the ancestor is /", () => {
+    expect(zipEntryName("/home/u/a.bag", "/")).toBe("home/u/a.bag");
+  });
+
+  it("never collides within one selection set (relative paths are unique)", () => {
+    const paths = ["/data/bags/a.bag", "/data/logs/a.bag", "/data/bags/b.bag"];
+    const ancestor = commonAncestorDir(paths.map(parentDir));
+    const names = paths.map((path) => zipEntryName(path, ancestor));
+    expect(new Set(names).size).toBe(names.length);
+    expect(names).toEqual(["bags/a.bag", "logs/a.bag", "bags/b.bag"]);
+  });
+});
+
+describe("createZipWriter with relative-path entry names", () => {
+  it("round-trips entries whose names contain slashes (fflate unzipSync)", async () => {
+    const writable = new MockWritable();
+    const writer = createZipWriter(writable.asStream());
+
+    const first = new TextEncoder().encode("bag bytes");
+    const second = new TextEncoder().encode("log bytes");
+
+    writer.beginEntry("bags/2026/a.bag", Date.parse("2026-08-06T13:14:16Z"));
+    await writer.pushEntryChunk(first);
+    await writer.endEntry();
+    writer.beginEntry("logs/run.log", Date.parse("2026-01-02T03:04:06Z"));
+    await writer.pushEntryChunk(second);
+    await writer.endEntry();
+    await writer.finalize();
+
+    expect(writable.closed).toBe(true);
+    const unzipped = unzipSync(writable.bytes());
+    expect(Object.keys(unzipped)).toEqual(["bags/2026/a.bag", "logs/run.log"]);
+    expect(unzipped["bags/2026/a.bag"]).toEqual(first);
+    expect(unzipped["logs/run.log"]).toEqual(second);
   });
 });

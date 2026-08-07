@@ -80,10 +80,63 @@ export async function resolveZipNameConflict(
   }
 }
 
+/** Parent directory of a canonical absolute path (`/a/b` → `/a`; `/a` → `/`). */
+export function parentDir(path: string): string {
+  const slashIndex = path.lastIndexOf("/");
+  return slashIndex <= 0 ? "/" : path.slice(0, slashIndex);
+}
+
+/**
+ * Longest common ancestor of the given canonical directories, compared by path
+ * segments (SPEC_server_file_browser.md §5.1) — `/a/b` and `/a/bc` share only `/a`,
+ * never a string prefix. Returns `/` when the dirs share no segment (or the list is
+ * empty).
+ */
+export function commonAncestorDir(dirs: readonly string[]): string {
+  const first = dirs[0];
+  if (first == undefined) {
+    return "/";
+  }
+  // Canonical absolute paths split into segments (the leading empty segment is dropped).
+  const firstSegments = first.split("/").filter((segment) => segment.length > 0);
+  let commonLength = firstSegments.length;
+  for (const dir of dirs.slice(1)) {
+    const segments = dir.split("/").filter((segment) => segment.length > 0);
+    let index = 0;
+    while (
+      index < commonLength &&
+      index < segments.length &&
+      segments[index] === firstSegments[index]
+    ) {
+      index += 1;
+    }
+    commonLength = index;
+  }
+  const common = firstSegments.slice(0, commonLength);
+  return common.length === 0 ? "/" : `/${common.join("/")}`;
+}
+
+/**
+ * Zip entry name for a selected file (SPEC_server_file_browser.md §5.1): the path
+ * relative to the common ancestor of all selections' parent directories. Selections
+ * from a single directory degrade to bare names; an ancestor of `/` yields the full
+ * path without its leading slash. Entry names can never collide — file names are unique
+ * within a canonical directory, so relative paths are unique.
+ */
+export function zipEntryName(fullPath: string, ancestor: string): string {
+  if (ancestor === "/") {
+    return fullPath.slice(1);
+  }
+  return fullPath.slice(ancestor.length + 1);
+}
+
 export type ServerExportZipWriter = {
   /**
-   * Start a new entry. The mtime is clamped to the DOS-encodable range. Never throws:
-   * a tripped size guard or write failure is surfaced by pushEntryChunk/endEntry.
+   * Start a new entry. The name may contain `/` (a cross-directory relative path from
+   * zipEntryName) — no explicit directory entries are written; extractors create the
+   * intermediate directories themselves (SPEC_server_file_browser.md §5.1). The mtime
+   * is clamped to the DOS-encodable range. Never throws: a tripped size guard or write
+   * failure is surfaced by pushEntryChunk/endEntry.
    */
   beginEntry(name: string, mtimeMs: number): void;
   /**
