@@ -3,6 +3,10 @@
   "include": ["./src/**/*", "./src/**/*.json", "../package.json"],
   "compilerOptions": {
     "rootDir": "./src",
+    // Emit build outputs (tsc --build / yarn build:packages) to dist/ instead of next to
+    // sources, so the compiled .js files can never shadow the .ts/.tsx sources during
+    // module resolution (webpack/jest resolve .js first).
+    "outDir": "./dist",
     "baseUrl": "./src",
     "jsx": "react-jsx",
     "lib": ["dom", "dom.iterable", "es2022", "webworker", "ESNext.Disposable"],

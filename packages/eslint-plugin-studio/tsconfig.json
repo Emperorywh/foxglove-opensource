@@ -1,8 +1,13 @@
 {
   "extends": "@foxglove/tsconfig/base",
   "include": ["./**/*.ts"],
+  "exclude": ["node_modules", "dist"],
   "compilerOptions": {
     "rootDir": ".",
+    // Emit build outputs (tsc --build / yarn build:packages) to dist/ instead of next to
+    // sources, so the compiled .js files can never shadow the .ts sources during
+    // module resolution (jest resolves .js first).
+    "outDir": "./dist",
     "lib": ["es2022"],
     "module": "NodeNext",
     "moduleResolution": "NodeNext"
