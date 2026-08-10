@@ -25,6 +25,10 @@
     "benchmark:serve": "webpack serve --mode development --progress --config benchmark/webpack.config.ts",
     "benchmark:build:prod": "webpack --mode production --progress --config benchmark/webpack.config.ts",
     "bridge:serve": "tsc --build packages/ssh-bridge/tsconfig.json && node packages/ssh-bridge/dist/index.js",
+    "desktop:start": "yarn workspace desktop start",
+    "desktop:dist": "yarn web:build:prod && yarn workspace desktop dist",
+    "desktop:dist:dir": "yarn web:build:prod && yarn workspace desktop dist:dir",
+    "desktop:release": "yarn web:build:prod && yarn workspace desktop release",
     "license-check": "ts-node ci/license-check.ts",
     "lint": "TIMING=1 eslint --report-unused-disable-directives --fix .",
     "lint:ci": "TIMING=1 eslint --report-unused-disable-directives --config .eslintrc.ci.yaml .",
@@ -45,7 +49,8 @@
       "packages/*",
       "packages/@types/*",
       "web",
-      "benchmark"
+      "benchmark",
+      "desktop"
     ]
   },
   "resolutions": {

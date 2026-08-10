@@ -14,6 +14,16 @@
 
 export const BRIDGE_URL = "ws://127.0.0.1:8765";
 
+/**
+ * In the desktop app the Electron main process embeds the bridge and exposes its actual
+ * URL as `globalThis.sshBridgeUrl` (the default port may be occupied by another program,
+ * in which case the embedded bridge falls back to an ephemeral port). Outside the desktop
+ * app nothing is injected and the standalone bridge's default URL is used.
+ */
+export function defaultBridgeUrl(): string {
+  return (globalThis as { sshBridgeUrl?: string }).sshBridgeUrl ?? BRIDGE_URL;
+}
+
 const PROTOCOL_VERSION = 3;
 const HELLO_TIMEOUT_MS = 5000;
 
@@ -100,7 +110,7 @@ export class ServerExportBridgeClient {
    * Open the WebSocket and perform the hello handshake (SPEC §5 Step A):
    * 5s timeout, version check. Resolves once the bridge is ready for requests.
    */
-  public async open(url: string = BRIDGE_URL): Promise<void> {
+  public async open(url: string = defaultBridgeUrl()): Promise<void> {
     this.#intentionalClose = false;
     const ws = new WebSocket(url);
     ws.binaryType = "arraybuffer";

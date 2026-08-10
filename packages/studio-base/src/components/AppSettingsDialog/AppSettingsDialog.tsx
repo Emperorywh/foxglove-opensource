@@ -15,10 +15,8 @@ import {
   FormControlLabel,
   FormLabel,
   IconButton,
-  Link,
   Tab,
   Tabs,
-  Typography,
   useMediaQuery,
 } from "@mui/material";
 import { MouseEvent, SyntheticEvent, useState } from "react";
@@ -27,7 +25,6 @@ import { makeStyles } from "tss-react/mui";
 
 import { AppSetting } from "@foxglove/studio-base";
 import OsContextSingleton from "@foxglove/studio-base/OsContextSingleton";
-import CopyButton from "@foxglove/studio-base/components/CopyButton";
 import { ExperimentalFeatureSettings } from "@foxglove/studio-base/components/ExperimentalFeatureSettings";
 import FoxgloveLogoText from "@foxglove/studio-base/components/FoxgloveLogoText";
 import Stack from "@foxglove/studio-base/components/Stack";
@@ -128,58 +125,6 @@ const useStyles = makeStyles()((theme) => ({
     fontSize: theme.typography.h3.fontSize,
   },
 }));
-
-type SectionKey = "resources" | "products" | "contact" | "legal";
-
-const aboutItems = new Map<
-  SectionKey,
-  {
-    subheader: string;
-    links: { title: string; url?: string }[];
-  }
->([
-  [
-    "resources",
-    {
-      subheader: "External resources",
-      links: [
-        ...(isDesktopApp() ? [] : [{ title: "Desktop app", url: "https://foxglove.dev/download" }]),
-        { title: "Browse docs", url: "https://docs.foxglove.dev/docs" },
-        { title: "Join our community", url: "https://foxglove.dev/community" },
-      ],
-    },
-  ],
-  [
-    "products",
-    {
-      subheader: "Products",
-      links: [
-        { title: "Foxglove Studio", url: "https://foxglove.dev/studio" },
-        { title: "Foxglove Data Platform", url: "https://foxglove.dev/data-platform" },
-      ],
-    },
-  ],
-  [
-    "contact",
-    {
-      subheader: "Contact",
-      links: [
-        { title: "Give feedback", url: "https://foxglove.dev/contact" },
-        { title: "Schedule a demo", url: "https://foxglove.dev/demo" },
-      ],
-    },
-  ],
-  [
-    "legal",
-    {
-      subheader: "Legal",
-      links: [
-        { title: "License terms", url: "https://foxglove.dev/legal/studio-license" },
-        { title: "Privacy policy", url: "https://foxglove.dev/legal/privacy" },
-      ],
-    },
-  ],
-]);
 
 export type AppSettingsTab = "general" | "extensions" | "experimental-features" | "about";
 

@@ -1,0 +1,56 @@
+{
+  "name": "desktop",
+  "version": "1.86.0",
+  "description": "Foxglove Studio desktop (Electron shell around the web build)",
+  "license": "MPL-2.0",
+  "private": true,
+  "author": {
+    "name": "Foxglove Technologies",
+    "email": "support@foxglove.dev"
+  },
+  "main": "dist/main.js",
+  "scripts": {
+    "bundle": "node build.mjs",
+    "start": "node build.mjs && electron .",
+    "dist": "node build.mjs && electron-builder",
+    "dist:dir": "node build.mjs && electron-builder --dir",
+    "release": "node build.mjs && electron-builder --publish always"
+  },
+  "devDependencies": {
+    "@types/node": "20.10.0",
+    "electron": "28.3.3",
+    "electron-builder": "24.13.3",
+    "electron-updater": "6.1.8",
+    "esbuild": "0.20.2",
+    "typescript": "5.3.3"
+  },
+  "build": {
+    "appId": "com.foxglove.studio",
+    "productName": "Foxglove Studio",
+    "npmRebuild": false,
+    "publish": {
+      "provider": "github",
+      "owner": "Emperorywh",
+      "repo": "foxglove-opensource"
+    },
+    "directories": {
+      "output": "out",
+      "buildResources": "resources"
+    },
+    "files": [
+      "dist/**",
+      "web-dist/**",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "Foxglove Studio"
+    }
+  }
+}
