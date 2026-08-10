@@ -96,9 +96,9 @@ export function SettingsMenu({
             {t("extensions")}
           </MenuItem>
         )}
-        <Divider variant="middle" />
+        {/* <Divider variant="middle" />
         <MenuItem onClick={onDocsClick}>{t("documentation")}</MenuItem>
-        <MenuItem onClick={onSlackClick}>{t("joinSlackCommunity")}</MenuItem>
+        <MenuItem onClick={onSlackClick}>{t("joinSlackCommunity")}</MenuItem> */}
       </Menu>
     </>
   );

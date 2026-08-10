@@ -27,18 +27,21 @@ declare module "@mui/material/styles" {
   }
 }
 
+// Brand palette: primary blue #154890, error red #CE181C.
+// Dark mode uses lightened variants so the colors keep sufficient
+// contrast against dark backgrounds (appBar is dark in both modes).
 export const dark: PaletteOptions = {
   name: "dark",
   mode: "dark",
   tonalOffset: 0.15,
   appBar: {
     main: "#35363A",
-    primary: "#9480ed",
+    primary: "#5A93E2",
     text: "#ffffff",
   },
-  primary: { main: "#9480ed" },
+  primary: { main: "#5A93E2" },
   secondary: { main: "#b1b1b1" },
-  error: { main: "#f54966" },
+  error: { main: "#E75558" },
   warning: { main: "#eba800" },
   success: { main: "#92c353" },
   info: { main: "#29bee7" },
@@ -76,12 +79,12 @@ export const light: PaletteOptions = {
   tonalOffset: 0.22,
   appBar: {
     main: "#27272b",
-    primary: "#9480ed",
+    primary: "#5A93E2",
     text: "#ffffff",
   },
-  primary: { main: "#6f3be8" },
+  primary: { main: "#154890" },
   secondary: { main: "#808080" },
-  error: { main: "#db3553" },
+  error: { main: "#CE181C" },
   warning: { main: "#eba800" },
   success: { main: "#107c10" },
   info: { main: "#1EA7FD" },

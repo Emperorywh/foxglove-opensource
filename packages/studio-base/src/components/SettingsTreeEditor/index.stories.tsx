@@ -136,7 +136,7 @@ const BasicSettings: SettingsTreeNodes = {
       color: {
         label: "Color",
         input: "rgb",
-        value: "#9480ed",
+        value: "#154890",
       },
       url: {
         label: "Model URL (URDF)",

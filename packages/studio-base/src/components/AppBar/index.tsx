@@ -207,7 +207,7 @@ export function AppBar(props: AppBarProps): JSX.Element {
                   setAppMenuEl(event.currentTarget);
                 }}
               >
-                <FoxgloveLogo fontSize="inherit" color="inherit" />
+                <FoxgloveLogo />
                 <ChevronDown12Regular
                   className={classes.dropDownIcon}
                   primaryFill={theme.palette.common.white}

@@ -310,41 +310,8 @@ export function AppSettingsDialog(
           >
             <Stack gap={2} alignItems="flex-start">
               <header>
-                <FoxgloveLogoText color="primary" className={classes.logo} />
+                <FoxgloveLogoText className={classes.logo} />
               </header>
-              <Stack direction="row" alignItems="center" gap={1}>
-                <Typography variant="body2">
-                  Foxglove Studio version {FOXGLOVE_STUDIO_VERSION}
-                </Typography>
-                <CopyButton
-                  size="small"
-                  getText={() => FOXGLOVE_STUDIO_VERSION?.toString() ?? ""}
-                />
-              </Stack>
-              {[
-                aboutItems.get("resources"),
-                aboutItems.get("products"),
-                aboutItems.get("contact"),
-                aboutItems.get("legal"),
-              ].map((item) => {
-                return (
-                  <Stack key={item?.subheader} gap={1}>
-                    {item?.subheader && <Typography>{item.subheader}</Typography>}
-                    {item?.links.map((link) => (
-                      <Link
-                        variant="body2"
-                        underline="hover"
-                        key={link.title}
-                        data-testid={link.title}
-                        href={link.url}
-                        target="_blank"
-                      >
-                        {link.title}
-                      </Link>
-                    ))}
-                  </Stack>
-                );
-              })}
             </Stack>
           </section>
         </Stack>
