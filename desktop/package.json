@@ -12,6 +12,7 @@
   "scripts": {
     "bundle": "node build.mjs",
     "start": "node build.mjs && electron .",
+    "dev": "node dev.mjs",
     "dist": "node build.mjs && electron-builder",
     "dist:dir": "node build.mjs && electron-builder --dir",
     "release": "node build.mjs && electron-builder --publish always"

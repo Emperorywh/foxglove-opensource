@@ -26,6 +26,7 @@
     "benchmark:build:prod": "webpack --mode production --progress --config benchmark/webpack.config.ts",
     "bridge:serve": "tsc --build packages/ssh-bridge/tsconfig.json && node packages/ssh-bridge/dist/index.js",
     "desktop:start": "yarn workspace desktop start",
+    "desktop:dev": "yarn workspace desktop dev",
     "desktop:dist": "yarn web:build:prod && yarn workspace desktop dist",
     "desktop:dist:dir": "yarn web:build:prod && yarn workspace desktop dist:dir",
     "desktop:release": "yarn web:build:prod && yarn workspace desktop release",

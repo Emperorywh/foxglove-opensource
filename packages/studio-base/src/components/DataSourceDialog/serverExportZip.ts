@@ -16,6 +16,8 @@
 
 import { Zip, ZipPassThrough } from "fflate";
 
+import { ServerExportWritable } from "./serverExportTarget";
+
 /**
  * Maximum zip container bytes: 4 GiB − 64 MiB. The headroom covers the central
  * directory and in-flight entry overhead (SPEC §5.6).
@@ -158,7 +160,7 @@ export type ServerExportZipWriter = {
 };
 
 export function createZipWriter(
-  writable: FileSystemWritableFileStream,
+  writable: ServerExportWritable,
   opts?: {
     /** Defaults to MAX_ZIP_BYTES; tests inject a small limit. */
     maxBytes?: number;

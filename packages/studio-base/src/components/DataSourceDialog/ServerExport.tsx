@@ -63,6 +63,12 @@ import {
   visibleSortedEntries,
 } from "./serverExportBrowser";
 import {
+  ServerExportTarget,
+  ServerExportWritable,
+  desktopExportFs,
+  pickExportTarget,
+} from "./serverExportTarget";
+import {
   ServerExportZipWriter,
   ZipSizeLimitExceededError,
   commonAncestorDir,
@@ -284,7 +290,10 @@ export default function ServerExport(): JSX.Element {
   const { dialogActions } = useWorkspaceActions();
   const { selectSource } = usePlayerSelection();
 
-  const supportsFileSystemAccess = "showDirectoryPicker" in window;
+  // Browsers write through the File System Access API; the desktop app cannot (Electron
+  // denies write grants — createWritable rejects with NotAllowedError), so the Electron
+  // preload injects an IPC fs bridge that pickExportTarget() prefers when present.
+  const supportsLocalExport = desktopExportFs() != undefined || "showDirectoryPicker" in window;
 
   // ----- Step & connection form state -----
   const [step, setStep] = useState<Step>("connect");
@@ -322,7 +331,7 @@ export default function ServerExport(): JSX.Element {
 
   const itemsRef = useRef<ExportItem[]>([]);
   const clientRef = useRef<ServerExportBridgeClient>();
-  const dirHandleRef = useRef<FileSystemDirectoryHandle>();
+  const targetRef = useRef<ServerExportTarget>();
   const exportSessionRef = useRef<ExportSession>();
   const openAfterExportRef = useRef(false);
   const conflictResolveRef = useRef<(choice: ConflictChoice) => void>();
@@ -332,7 +341,7 @@ export default function ServerExport(): JSX.Element {
   const zipNameRef = useRef<string>();
   const zipWriterRef = useRef<ServerExportZipWriter>();
   const currentWritableRef = useRef<{
-    writable: FileSystemWritableFileStream;
+    writable: ServerExportWritable;
     name: string;
   }>();
   /**
@@ -395,9 +404,8 @@ export default function ServerExport(): JSX.Element {
       }
       const current = currentWritableRef.current;
       if (current != undefined) {
-        const dirHandle = dirHandleRef.current;
         void current.writable.abort().catch(() => undefined);
-        void dirHandle?.removeEntry(current.name).catch(() => undefined);
+        void targetRef.current?.removeEntry(current.name).catch(() => undefined);
       }
     };
   }, []);
@@ -575,13 +583,13 @@ export default function ServerExport(): JSX.Element {
 
   const onPickDirectory = useCallback(async () => {
     try {
-      const handle = await showDirectoryPicker({ mode: "readwrite" });
-      dirHandleRef.current = handle;
-      setDirName(handle.name);
-    } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") {
+      const target = await pickExportTarget();
+      if (target == undefined) {
         return; // user dismissed the picker
       }
+      targetRef.current = target;
+      setDirName(target.displayName);
+    } catch {
       setAlertText(errorText(t, "LOCAL_WRITE_ERROR"));
     }
   }, [t]);
@@ -613,13 +621,12 @@ export default function ServerExport(): JSX.Element {
         return;
       }
       const first = itemsRef.current[0];
-      const dirHandle = dirHandleRef.current;
-      if (first == undefined || dirHandle == undefined) {
+      const target = targetRef.current;
+      if (first == undefined || target == undefined) {
         return;
       }
       try {
-        const fileHandle = await dirHandle.getFileHandle(first.name);
-        const file = await fileHandle.getFile();
+        const file = await target.readFile(first.name);
         selectSource("ros1-local-bagfile", { type: "file", files: [file] });
         replaceClient(undefined);
         dialogActions.dataSource.close();
@@ -633,8 +640,8 @@ export default function ServerExport(): JSX.Element {
   const runExport = useCallback(
     async (files: ExportItem[], skip: ReadonlySet<string>, opts: { openAfter: boolean }) => {
       const client = clientRef.current;
-      const dirHandle = dirHandleRef.current;
-      if (client == undefined || dirHandle == undefined) {
+      const target = targetRef.current;
+      if (client == undefined || target == undefined) {
         return;
       }
       const session: ExportSession = {
@@ -662,11 +669,10 @@ export default function ServerExport(): JSX.Element {
         }
         updateItem(file.path, { status: "active", bytesWritten: 0 });
 
-        let writable: FileSystemWritableFileStream;
+        let writable: ServerExportWritable;
         try {
           // Single-file mode: the local file name is the bare name (SPEC §6.5).
-          const fileHandle = await dirHandle.getFileHandle(file.name, { create: true });
-          writable = await fileHandle.createWritable();
+          writable = await target.createWritable(file.name);
         } catch (err) {
           session.consecutiveLocalFailures += 1;
           if (session.consecutiveLocalFailures >= 2) {
@@ -703,7 +709,7 @@ export default function ServerExport(): JSX.Element {
               if (session.consecutiveLocalFailures >= 2) {
                 session.stopQueue = true;
               }
-              await dirHandle.removeEntry(file.name).catch(() => undefined);
+              await target.removeEntry(file.name).catch(() => undefined);
               updateItem(file.path, {
                 status: "failed",
                 reasonCode: "LOCAL_WRITE_ERROR",
@@ -721,7 +727,7 @@ export default function ServerExport(): JSX.Element {
           } else {
             // Canceled: delete the partially written file (SPEC §4.3).
             await writable.abort().catch(() => undefined);
-            await dirHandle.removeEntry(file.name).catch(() => undefined);
+            await target.removeEntry(file.name).catch(() => undefined);
             updateItem(file.path, {
               status: "failed",
               reasonCode: "CANCELED",
@@ -731,7 +737,7 @@ export default function ServerExport(): JSX.Element {
         } catch (err) {
           currentWritableRef.current = undefined;
           await writable.abort().catch(() => undefined);
-          await dirHandle.removeEntry(file.name).catch(() => undefined);
+          await target.removeEntry(file.name).catch(() => undefined);
           const code = err instanceof ServerExportError ? err.code : "IO_ERROR";
           if (code === "LOCAL_WRITE_ERROR") {
             session.consecutiveLocalFailures += 1;
@@ -767,8 +773,8 @@ export default function ServerExport(): JSX.Element {
   const runZipExport = useCallback(
     async (files: ExportItem[], opts: { openAfter: boolean }) => {
       const client = clientRef.current;
-      const dirHandle = dirHandleRef.current;
-      if (client == undefined || dirHandle == undefined) {
+      const target = targetRef.current;
+      if (client == undefined || target == undefined) {
         return;
       }
       const session: ExportSession = {
@@ -784,18 +790,12 @@ export default function ServerExport(): JSX.Element {
       // (SPEC §5.4); a leftover partial zip gets an automatic " (n)" suffix instead.
       zipNameRef.current ??= zipFileName(new Date());
       const zipName = await resolveZipNameConflict(zipNameRef.current, async (name) => {
-        try {
-          await dirHandle.getFileHandle(name);
-          return true;
-        } catch {
-          return false; // NotFoundError: no conflict
-        }
+        return await target.exists(name);
       });
 
-      let writable: FileSystemWritableFileStream;
+      let writable: ServerExportWritable;
       try {
-        const fileHandle = await dirHandle.getFileHandle(zipName, { create: true });
-        writable = await fileHandle.createWritable();
+        writable = await target.createWritable(zipName);
       } catch (err) {
         // The single local product cannot be created — nothing has started (SPEC §7).
         setAlertText(errorText(tRef.current, "LOCAL_WRITE_ERROR"));
@@ -815,7 +815,7 @@ export default function ServerExport(): JSX.Element {
       const writer = createZipWriter(writable, {
         onAbort: async () => {
           try {
-            await dirHandle.removeEntry(zipName);
+            await target.removeEntry(zipName);
           } catch (err) {
             // A leftover partial zip is reported in the summary for manual cleanup
             // (SPEC §8.6); NotFoundError just means it was never flushed to disk.
@@ -953,8 +953,8 @@ export default function ServerExport(): JSX.Element {
 
   const checkConflictsAndExport = useCallback(
     async (files: ExportItem[], opts: { openAfter: boolean }) => {
-      const dirHandle = dirHandleRef.current;
-      if (dirHandle == undefined || files.length === 0) {
+      const target = targetRef.current;
+      if (target == undefined || files.length === 0) {
         return;
       }
       // Conflict precheck before any transfer starts (SPEC §10): single-file mode only,
@@ -962,11 +962,8 @@ export default function ServerExport(): JSX.Element {
       const conflicts: string[] = [];
       await Promise.all(
         files.map(async (file) => {
-          try {
-            await dirHandle.getFileHandle(file.name);
+          if (await target.exists(file.name)) {
             conflicts.push(file.path);
-          } catch {
-            // NotFoundError: no conflict
           }
         }),
       );
@@ -1311,7 +1308,7 @@ export default function ServerExport(): JSX.Element {
   const renderConnectStep = () => (
     <>
       <div className={classes.content}>
-        {!supportsFileSystemAccess && (
+        {!supportsLocalExport && (
           <Alert severity="warning">{t("serverExportBrowserUnsupported")}</Alert>
         )}
         {alertText != undefined && <Alert severity="error">{alertText}</Alert>}
@@ -1320,7 +1317,7 @@ export default function ServerExport(): JSX.Element {
           value={host}
           error={fieldErrors.host != undefined}
           helperText={fieldErrors.host}
-          disabled={!supportsFileSystemAccess || busy}
+          disabled={!supportsLocalExport || busy}
           onChange={(event) => {
             setHost(event.target.value);
           }}
@@ -1332,7 +1329,7 @@ export default function ServerExport(): JSX.Element {
           value={port}
           error={fieldErrors.port != undefined}
           helperText={fieldErrors.port}
-          disabled={!supportsFileSystemAccess || busy}
+          disabled={!supportsLocalExport || busy}
           onChange={(event) => {
             setPort(event.target.value);
           }}
@@ -1344,7 +1341,7 @@ export default function ServerExport(): JSX.Element {
           value={username}
           error={fieldErrors.username != undefined}
           helperText={fieldErrors.username}
-          disabled={!supportsFileSystemAccess || busy}
+          disabled={!supportsLocalExport || busy}
           onChange={(event) => {
             setUsername(event.target.value);
           }}
@@ -1358,7 +1355,7 @@ export default function ServerExport(): JSX.Element {
           value={password}
           error={fieldErrors.password != undefined}
           helperText={fieldErrors.password}
-          disabled={!supportsFileSystemAccess || busy}
+          disabled={!supportsLocalExport || busy}
           onChange={(event) => {
             setPassword(event.target.value);
           }}
@@ -1378,7 +1375,7 @@ export default function ServerExport(): JSX.Element {
         </Button>,
         <Button
           variant="contained"
-          disabled={!supportsFileSystemAccess || busy}
+          disabled={!supportsLocalExport || busy}
           onClick={() => {
             void onConnect();
           }}
@@ -1693,7 +1690,8 @@ export default function ServerExport(): JSX.Element {
               {t("serverExportChooseDirectory")}
             </Button>
             {dirName != undefined ? (
-              // The File System Access API only exposes the directory name, not its full path.
+              // Browser: the File System Access API only exposes the directory name.
+              // Desktop: the native picker provides the full path (displayName).
               <Typography variant="body2" className={classes.monoName} title={dirName}>
                 {dirName}
               </Typography>

@@ -20,12 +20,20 @@ Electron 壳：把 `web` 构建产物打包成 Windows 桌面应用（exe）。
 ```sh
 yarn desktop:dist        # 完整流程：web 生产构建 + NSIS 安装包（输出 desktop/out/）
 yarn desktop:dist:dir    # 同上，但只输出免安装目录（打包更快，用于验证）
-yarn desktop:start       # 用现有 web/.webpack 直接启动 Electron（开发调试用）
+yarn desktop:start       # 用现有 web/.webpack 直接启动 Electron（一次性构建后启动）
 
-# 配合 webpack-dev-server 开发主进程/壳：
-yarn web:serve           # 终端 1
-FOXGLOVE_DEV_SERVER_URL=http://localhost:8080 yarn desktop:start   # 终端 2
+# 开发调试（推荐）：渲染进程热更新 + 主进程/preload 改动自动重启 Electron
+yarn web:serve           # 终端 1（先启动）
+yarn desktop:dev         # 终端 2
 ```
+
+`desktop:dev`（dev.mjs）启动时自动探测 `http://localhost:8080` 的 webpack-dev-server：
+在则窗口加载它（渲染进程改动走 HMR，无需重启）；不在则回退到 `web-dist/`（最近一次
+`web:build:prod` 的产物）并打印提示。同时 esbuild watch 监听 `src/main.ts` /
+`src/preload.ts`，保存后约 100ms 重新打包并自动重启 Electron。
+注意顺序：先 `yarn web:serve`，再 `yarn desktop:dev`（探测只在启动时做一次）。
+要显式指定其他 dev server 地址，PowerShell 下用
+`$env:FOXGLOVE_DEV_SERVER_URL="http://localhost:8080"; yarn desktop:dev`。
 
 国内环境如 Electron 二进制下载缓慢：
 

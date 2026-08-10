@@ -2,13 +2,12 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { AddressInfo } from "net";
-
-import { app, BrowserWindow, dialog, shell } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
 import { autoUpdater } from "electron-updater";
-import { createReadStream } from "fs";
-import { stat } from "fs/promises";
+import { WriteStream, createReadStream, createWriteStream } from "fs";
+import { readFile, stat, unlink } from "fs/promises";
 import { createServer } from "http";
+import { AddressInfo } from "net";
 import path from "path";
 
 import { DEFAULT_PORT, startBridgeServer } from "@foxglove/ssh-bridge/server";
@@ -59,7 +58,7 @@ async function startStaticServer(root: string): Promise<number> {
         return;
       }
       let info = await stat(filePath).catch(() => undefined);
-      if (info?.isDirectory()) {
+      if (info?.isDirectory() === true) {
         filePath = path.join(filePath, "index.html");
         info = await stat(filePath).catch(() => undefined);
       }
@@ -122,6 +121,180 @@ async function startBridge(): Promise<string> {
 }
 
 const UPDATE_CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000; // 4 hours
+
+/**
+ * Server-file export: the renderer cannot use the File System Access API's write path —
+ * Electron denies write grants, so createWritable() always rejects with NotAllowedError.
+ * These handlers stream the bytes to Node fs instead (consumed via the serverExportFs
+ * preload bridge). File names are validated as bare names and resolved inside the chosen
+ * directory, so a compromised renderer cannot escape it through this channel.
+ */
+type OpenExportFile = {
+  stream: WriteStream;
+  /** First async stream error, replayed to the next write/close call. */
+  failure?: Error;
+};
+
+let nextExportFileId = 1;
+const openExportFiles = new Map<number, OpenExportFile>();
+
+function exportFilePath(dir: unknown, name: unknown): string {
+  if (typeof dir !== "string" || dir === "") {
+    throw new Error("invalid export directory");
+  }
+  if (
+    typeof name !== "string" ||
+    name === "" ||
+    name === "." ||
+    name === ".." ||
+    name.includes("/") ||
+    name.includes("\\")
+  ) {
+    throw new Error(`invalid export file name: ${String(name)}`);
+  }
+  return path.join(dir, name);
+}
+
+function openExportFile(id: unknown): { id: number; entry: OpenExportFile } {
+  const entry = typeof id === "number" ? openExportFiles.get(id) : undefined;
+  if (entry == undefined) {
+    throw new Error(`unknown export file id: ${String(id)}`);
+  }
+  return { id: id as number, entry };
+}
+
+function setupServerExportIpc(): void {
+  ipcMain.handle("serverExport:chooseDirectory", async (event) => {
+    const options = {
+      title: "选择导出目录",
+      buttonLabel: "选择此目录",
+      properties: ["openDirectory", "createDirectory"] as Array<"openDirectory" | "createDirectory">,
+    };
+    const win = BrowserWindow.fromWebContents(event.sender);
+    const result =
+      win == undefined
+        ? await dialog.showOpenDialog(options)
+        : await dialog.showOpenDialog(win, options);
+    const dir = result.filePaths[0];
+    return result.canceled || dir == undefined ? undefined : dir;
+  });
+
+  ipcMain.handle("serverExport:exists", async (_event, dir: unknown, name: unknown) => {
+    try {
+      await stat(exportFilePath(dir, name));
+      return true;
+    } catch {
+      return false; // missing (or unreadable) — treated as "no conflict"
+    }
+  });
+
+  ipcMain.handle("serverExport:createFile", async (_event, dir: unknown, name: unknown) => {
+    const filePath = exportFilePath(dir, name);
+    const stream = createWriteStream(filePath, { flags: "w" });
+    // Surface open-time failures (EACCES, ENOSPC, …) to the caller synchronously.
+    await new Promise<void>((resolve, reject) => {
+      const onOpen = (): void => {
+        stream.removeListener("error", onError);
+        resolve();
+      };
+      const onError = (err: Error): void => {
+        stream.removeListener("open", onOpen);
+        reject(err);
+      };
+      stream.once("open", onOpen);
+      stream.once("error", onError);
+    });
+    const id = nextExportFileId++;
+    const entry: OpenExportFile = { stream };
+    openExportFiles.set(id, entry);
+    // Errors after a successful open are recorded and replayed by write/close — without
+    // a listener the process would crash on an unhandled 'error' event.
+    stream.on("error", (err) => {
+      entry.failure ??= err;
+    });
+    return id;
+  });
+
+  ipcMain.handle("serverExport:write", async (_event, id: unknown, chunk: unknown) => {
+    const { entry } = openExportFile(id);
+    if (entry.failure != undefined) {
+      throw entry.failure;
+    }
+    if (!(chunk instanceof Uint8Array)) {
+      throw new Error("export write chunk must be a Uint8Array");
+    }
+    if (entry.stream.write(chunk)) {
+      return;
+    }
+    // Kernel buffer full — apply back-pressure until drain (or a deferred error).
+    await new Promise<void>((resolve, reject) => {
+      const onDrain = (): void => {
+        entry.stream.removeListener("error", onError);
+        resolve();
+      };
+      const onError = (err: Error): void => {
+        entry.stream.removeListener("drain", onDrain);
+        reject(err);
+      };
+      entry.stream.once("drain", onDrain);
+      entry.stream.once("error", onError);
+    });
+  });
+
+  ipcMain.handle("serverExport:close", async (_event, id: unknown) => {
+    const { id: fileId, entry } = openExportFile(id);
+    openExportFiles.delete(fileId);
+    await new Promise<void>((resolve, reject) => {
+      entry.stream.once("error", reject);
+      entry.stream.end(() => {
+        resolve();
+      });
+    });
+    // A deferred mid-stream failure still voids the file even when the flush succeeded.
+    if (entry.failure != undefined) {
+      throw entry.failure;
+    }
+  });
+
+  ipcMain.handle("serverExport:abort", async (_event, id: unknown) => {
+    const { id: fileId, entry } = openExportFile(id);
+    openExportFiles.delete(fileId);
+    entry.stream.destroy();
+    // On Windows, unlinking right after destroy races the handle release — wait for
+    // close. Deleting the partial file is the renderer's job (serverExport:remove).
+    if (!entry.stream.closed) {
+      await new Promise<void>((resolve) => {
+        entry.stream.once("close", () => {
+          resolve();
+        });
+      });
+    }
+  });
+
+  ipcMain.handle("serverExport:remove", async (_event, dir: unknown, name: unknown) => {
+    try {
+      await unlink(exportFilePath(dir, name));
+    } catch (err) {
+      // Already gone is the desired end state; real failures (EPERM, EBUSY) must surface
+      // so the renderer can report the leftover partial file.
+      if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
+        throw err;
+      }
+    }
+  });
+
+  ipcMain.handle("serverExport:readFile", async (_event, dir: unknown, name: unknown) => {
+    // "Export and open" re-ingests the finished file as a local bag in the renderer.
+    return await readFile(exportFilePath(dir, name));
+  });
+
+  app.on("will-quit", () => {
+    for (const { stream } of openExportFiles.values()) {
+      stream.destroy();
+    }
+    openExportFiles.clear();
+  });
+}
 
 /**
  * Check GitHub Releases for updates (configured via the `publish` field in package.json).
@@ -210,6 +383,7 @@ if (!gotSingleInstanceLock) {
   });
 
   void app.whenReady().then(async () => {
+    setupServerExportIpc();
     const bridgeUrl = await startBridge();
     await createMainWindow(bridgeUrl);
     mainWindow = BrowserWindow.getAllWindows()[0];
