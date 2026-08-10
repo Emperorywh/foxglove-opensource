@@ -17,11 +17,19 @@
   "files.trimFinalNewlines": true,
   "files.trimTrailingWhitespace": true,
   "prettier.prettierPath": "./node_modules/prettier/index.cjs",
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/.hg/store/**": true,
+    "**/node_modules/*/**": true,
+    "desktop/out/**": true
+  },
   "search.exclude": {
     "**/*.code-search": true,
     "**/bower_components": true,
     "**/node_modules": true,
     ".yarn/**": true,
+    "desktop/out/**": true,
     "yarn.lock": true
   },
   "typescript.tsdk": "node_modules/typescript/lib",
