@@ -7,13 +7,10 @@ import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import {
   Alert,
   Button,
-  Checkbox,
   Dialog,
   DialogActions,
   DialogProps,
   DialogTitle,
-  FormControlLabel,
-  FormLabel,
   IconButton,
   Tab,
   Tabs,
@@ -23,7 +20,6 @@ import { MouseEvent, SyntheticEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { makeStyles } from "tss-react/mui";
 
-import { AppSetting } from "@foxglove/studio-base";
 import OsContextSingleton from "@foxglove/studio-base/OsContextSingleton";
 import { ExperimentalFeatureSettings } from "@foxglove/studio-base/components/ExperimentalFeatureSettings";
 import FoxgloveLogoText from "@foxglove/studio-base/components/FoxgloveLogoText";
@@ -33,7 +29,6 @@ import {
   useWorkspaceStore,
   WorkspaceContextStore,
 } from "@foxglove/studio-base/context/Workspace/WorkspaceContext";
-import { useAppConfigurationValue } from "@foxglove/studio-base/hooks";
 import isDesktopApp from "@foxglove/studio-base/util/isDesktopApp";
 
 import {
@@ -42,6 +37,7 @@ import {
   LanguageSettings,
   LaunchDefault,
   MessageFramerate,
+  RobotAlarmServerSettings,
   RosPackagePath,
   TimeFormat,
   TimezoneSettings,
@@ -72,22 +68,12 @@ const useStyles = makeStyles()((theme) => ({
   tabPanelActive: {
     display: "block",
   },
-  checkbox: {
-    "&.MuiCheckbox-root": {
-      paddingTop: 0,
-    },
-  },
   dialogActions: {
     position: "sticky",
     backgroundColor: theme.palette.background.paper,
     borderTop: `${theme.palette.divider} 1px solid`,
     padding: theme.spacing(1),
     bottom: 0,
-  },
-  formControlLabel: {
-    "&.MuiFormControlLabel-root": {
-      alignItems: "start",
-    },
   },
   tab: {
     svg: {
@@ -140,9 +126,6 @@ export function AppSettingsDialog(
   const [activeTab, setActiveTab] = useState<AppSettingsTab>(
     _activeTab ?? initialActiveTab ?? "general",
   );
-  const [debugModeEnabled = false, setDebugModeEnabled] = useAppConfigurationValue<boolean>(
-    AppSetting.SHOW_DEBUG_PANELS,
-  );
   const { classes, cx, theme } = useStyles();
   const smUp = useMediaQuery(theme.breakpoints.up("sm"));
 
@@ -184,11 +167,11 @@ export function AppSettingsDialog(
           {extensionSettings && (
             <Tab className={classes.tab} label={t("extensions")} value="extensions" />
           )}
-          <Tab
+          {/* <Tab
             className={classes.tab}
             label={t("experimentalFeatures")}
             value="experimental-features"
-          />
+          /> */}
           <Tab className={classes.tab} label={t("about")} value="about" />
         </Tabs>
         <Stack direction="row" fullHeight overflowY="auto">
@@ -206,7 +189,8 @@ export function AppSettingsDialog(
               {supportsAppUpdates && <AutoUpdate />}
               {!isDesktopApp() && <LaunchDefault />}
               {isDesktopApp() && <RosPackagePath />}
-              <Stack>
+              <RobotAlarmServerSettings />
+              {/* <Stack>
                 <FormLabel>{t("advanced")}:</FormLabel>
                 <FormControlLabel
                   className={classes.formControlLabel}
@@ -221,7 +205,7 @@ export function AppSettingsDialog(
                   }
                   label={t("debugModeDescription")}
                 />
-              </Stack>
+              </Stack> */}
             </Stack>
           </section>
 

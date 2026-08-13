@@ -50,6 +50,7 @@ import {
 import { useWorkspaceActions } from "@foxglove/studio-base/context/Workspace/useWorkspaceActions";
 import { Player, PlayerPresence } from "@foxglove/studio-base/players/types";
 
+import AlarmLane from "./AlarmLane";
 import PlaybackTimeDisplay from "./PlaybackTimeDisplay";
 import { RepeatAdapter } from "./RepeatAdapter";
 import Scrubber from "./Scrubber";
@@ -193,6 +194,7 @@ export default function PlaybackControls(props: {
         <div className={classes.scrubberWrapper}>
           <Scrubber onSeek={seek} />
         </div>
+        <AlarmLane onSeek={seek} />
         <Stack direction="row" alignItems="center" flex={1} gap={1}>
           <Stack direction="row" alignItems="center" flex={1} gap={0.5}>
             {currentUserType !== "unauthenticated" && eventsSupported && (

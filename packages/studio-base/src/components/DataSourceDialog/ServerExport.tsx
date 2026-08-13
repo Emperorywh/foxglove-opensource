@@ -36,6 +36,7 @@ import { makeStyles } from "tss-react/mui";
 import Stack from "@foxglove/studio-base/components/Stack";
 import { usePlayerSelection } from "@foxglove/studio-base/context/PlayerSelectionContext";
 import { useWorkspaceActions } from "@foxglove/studio-base/context/Workspace/useWorkspaceActions";
+import { useRobotAlarmConfiguration } from "@foxglove/studio-base/hooks/useRobotAlarmConfiguration";
 
 import {
   ServerExportBridgeClient,
@@ -296,8 +297,12 @@ export default function ServerExport(): JSX.Element {
   const supportsLocalExport = desktopExportFs() != undefined || "showDirectoryPicker" in window;
 
   // ----- Step & connection form state -----
+  // IP 联动:SSH 主机与"设置-通用-告警服务"的 host 共用同一份 AppConfiguration 配置
+  // (端口不联动——SSH 默认 22、告警服务默认 50004,是机器人上两个不同的服务)。
+  // 输入框仍是本地 draft:挂载时用共享配置预填,连接成功后写回共享配置(onConnect)。
+  const { host: configuredHost, setHost: saveConfiguredHost } = useRobotAlarmConfiguration();
   const [step, setStep] = useState<Step>("connect");
-  const [host, setHost] = useState(() => readStoredField("host") ?? "");
+  const [host, setHost] = useState(configuredHost);
   const [port, setPort] = useState(() => readStoredField("port") ?? "22");
   const [username, setUsername] = useState(() => readStoredField("username") ?? "");
   // The password is intentionally memory-only (SPEC §11) and never persisted.
@@ -516,7 +521,8 @@ export default function ServerExport(): JSX.Element {
     setAlertText(undefined);
     try {
       const { client, home } = await connectBridge();
-      storeField("host", host.trim());
+      // 主机写回共享配置(与告警服务联动);端口/用户名是 SSH 私有,仍存 localStorage
+      void saveConfiguredHost(host.trim());
       storeField("port", port);
       storeField("username", username.trim());
       replaceClient(client);
@@ -540,7 +546,17 @@ export default function ServerExport(): JSX.Element {
     } finally {
       setBusy(false);
     }
-  }, [validateForm, connectBridge, host, port, username, replaceClient, requestList, t]);
+  }, [
+    validateForm,
+    connectBridge,
+    host,
+    port,
+    username,
+    saveConfiguredHost,
+    replaceClient,
+    requestList,
+    t,
+  ]);
 
   const onDisconnectAndBack = useCallback(() => {
     // Invalidate any in-flight list response before tearing the client down.
@@ -1316,7 +1332,7 @@ export default function ServerExport(): JSX.Element {
           label={t("serverExportHost")}
           value={host}
           error={fieldErrors.host != undefined}
-          helperText={fieldErrors.host}
+          helperText={fieldErrors.host ?? t("serverExportHostSharedHint")}
           disabled={!supportsLocalExport || busy}
           onChange={(event) => {
             setHost(event.target.value);

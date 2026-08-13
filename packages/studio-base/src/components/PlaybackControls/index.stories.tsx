@@ -13,13 +13,16 @@
 
 import { action } from "@storybook/addon-actions";
 import { StoryObj, StoryFn } from "@storybook/react";
-import { useEffect, useLayoutEffect } from "react";
+import { PropsWithChildren, useEffect, useLayoutEffect, useMemo } from "react";
 
 import MockMessagePipelineProvider from "@foxglove/studio-base/components/MessagePipeline/MockMessagePipelineProvider";
 import AppConfigurationContext, {
   IAppConfiguration,
 } from "@foxglove/studio-base/context/AppConfigurationContext";
 import { useEvents } from "@foxglove/studio-base/context/EventsContext";
+import PlayerSelectionContext, {
+  IDataSourceFactory,
+} from "@foxglove/studio-base/context/PlayerSelectionContext";
 import { useSetHoverValue } from "@foxglove/studio-base/context/TimelineInteractionStateContext";
 import {
   PlayerCapabilities,
@@ -35,6 +38,88 @@ import { makeMockEvents } from "@foxglove/studio-base/test/mocks/makeMockEvents"
 import PlaybackControls from "./index";
 
 const START_TIME = 1531761690;
+
+// 告警泳道(§7):合格的 ROS1 本地 bag 数据源 mock
+const ROS1_BAG_SOURCE: IDataSourceFactory = {
+  id: "ros1-local-bagfile",
+  type: "file",
+  displayName: "ROS 1 Bag",
+  initialize: () => undefined,
+};
+
+const BAG_START_MS = START_TIME * 1000;
+
+/** 构造一条 1Hz 状态采样记录(字段对齐接口示例) */
+function makeStatusSample(id: number, offsetMs: number, alarmMessage: string) {
+  return {
+    id,
+    time: BAG_START_MS + offsetMs,
+    alarm_message: alarmMessage,
+    action_info: "退出暂停状态",
+    task_id: "-",
+    power: 100,
+    linear_speed: 0,
+    angle_speed: 0,
+    steer: 0,
+    work_model: 1,
+    agv_model: 0,
+    charge_model: 0,
+    fork_model: 0,
+    load_model: 0,
+    release_model: false,
+    reset_button: 0,
+  };
+}
+
+// 两段告警:5s–7s(261;262 → 261)与 12s(265)
+const ALARM_SAMPLES = [
+  makeStatusSample(1331713, 5000, "261;262;"),
+  makeStatusSample(1331714, 6000, "261;"),
+  makeStatusSample(1331715, 7000, ""),
+  makeStatusSample(1331716, 12000, "265;"),
+  makeStatusSample(1331717, 13000, ""),
+];
+
+const NO_ALARM_SAMPLES = [
+  makeStatusSample(1331713, 5000, ""),
+  makeStatusSample(1331714, 6000, ""),
+  makeStatusSample(1331715, 7000, ""),
+];
+
+/**
+ * render 阶段同步安装 fetch mock,保证 AlarmLane 的查询 effect 发起请求时已生效;
+ * 卸载时恢复为不可用实现,避免泄漏到其他 story。
+ */
+function AlarmFetchMock({ data, children }: PropsWithChildren<{ data: unknown[] }>): JSX.Element {
+  useMemo(() => {
+    global.fetch = (async () => {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ status_code: 200, message: "成功", data }),
+      } as Response;
+    }) as typeof fetch;
+  }, [data]);
+  useEffect(() => {
+    return () => {
+      global.fetch = async () => {
+        throw new Error("not available");
+      };
+    };
+  }, []);
+  return <>{children}</>;
+}
+
+/** 提供 PlayerSelection mock:默认无数据源(不合格,不查询);告警 story 传入 ROS1 bag 源 */
+function makePlayerSelection(source?: IDataSourceFactory) {
+  return {
+    selectSource: () => {},
+    selectRecent: () => {},
+    availableSources: [],
+    recentSources: [],
+    selectedSource: source,
+  };
+}
 
 function getPlayerState(): PlayerState {
   const player: PlayerState = {
@@ -110,13 +195,16 @@ export default {
   decorators: [
     (Wrapped: StoryFn): JSX.Element => (
       <AppConfigurationContext.Provider value={mockAppConfiguration}>
-        <WorkspaceContextProvider>
-          <MockCurrentLayoutProvider>
-            <EventsProvider>
-              <Wrapped />
-            </EventsProvider>
-          </MockCurrentLayoutProvider>
-        </WorkspaceContextProvider>
+        {/* 默认无选中数据源:告警泳道不查询、不渲染,既有 story 行为不变 */}
+        <PlayerSelectionContext.Provider value={makePlayerSelection()}>
+          <WorkspaceContextProvider>
+            <MockCurrentLayoutProvider>
+              <EventsProvider>
+                <Wrapped />
+              </EventsProvider>
+            </MockCurrentLayoutProvider>
+          </WorkspaceContextProvider>
+        </PlayerSelectionContext.Provider>
       </AppConfigurationContext.Provider>
     ),
   ],
@@ -251,6 +339,54 @@ export const WithEvents: StoryObj = {
           seek={action("seek")}
         />
       </Wrapper>
+    );
+  },
+
+  parameters: { colorScheme: "both-column" },
+};
+
+// 决策 #13:查询成功但无告警时泳道完全隐藏,不占位
+export const AlarmLaneNoAlarms: StoryObj = {
+  render: () => {
+    const player = getPlayerState();
+    return (
+      <PlayerSelectionContext.Provider value={makePlayerSelection(ROS1_BAG_SOURCE)}>
+        <AlarmFetchMock data={NO_ALARM_SAMPLES}>
+          <Wrapper activeData={player.activeData}>
+            <PlaybackControls
+              isPlaying
+              getTimeInfo={() => ({})}
+              play={action("play")}
+              pause={action("pause")}
+              seek={action("seek")}
+            />
+          </Wrapper>
+        </AlarmFetchMock>
+      </PlayerSelectionContext.Provider>
+    );
+  },
+
+  parameters: { colorScheme: "both-column" },
+};
+
+// 有告警:进度条下方出现与时间轴对齐的红色告警区间,hover 查看采样详情,点击 seek
+export const AlarmLaneWithAlarms: StoryObj = {
+  render: () => {
+    const player = getPlayerState();
+    return (
+      <PlayerSelectionContext.Provider value={makePlayerSelection(ROS1_BAG_SOURCE)}>
+        <AlarmFetchMock data={ALARM_SAMPLES}>
+          <Wrapper activeData={player.activeData}>
+            <PlaybackControls
+              isPlaying
+              getTimeInfo={() => ({})}
+              play={action("play")}
+              pause={action("pause")}
+              seek={action("seek")}
+            />
+          </Wrapper>
+        </AlarmFetchMock>
+      </PlayerSelectionContext.Provider>
     );
   },
 

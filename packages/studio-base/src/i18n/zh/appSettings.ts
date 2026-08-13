@@ -25,6 +25,12 @@ export const appSettings: Partial<TypeOptions["resources"]["appSettings"]> = {
   messageRate: "消息速率",
   noExperimentalFeatures: "目前没有实验性的功能。",
   openLinksIn: "打开链接",
+  robotAlarmHost: "主机",
+  robotAlarmPort: "端口",
+  robotAlarmPortInvalid: "端口必须是 1 到 65535 之间的整数",
+  robotAlarmServer: "告警服务",
+  robotAlarmServerDescription:
+    "播放本地 ROS 1 bag 文件时,在播放进度条下方显示告警泳道。主机与「从服务器导出」(SSH) 连接联动共用,端口为告警服务专用。清空主机或端口即可禁用此功能。",
   ros: "ROS",
   settings: "设置",
   timestampFormat: "时间戳格式",

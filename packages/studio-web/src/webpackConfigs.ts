@@ -21,6 +21,25 @@ export interface WebpackConfiguration extends Configuration {
   devServer?: WebpackDevServerConfiguration;
 }
 
+/**
+ * 告警服务同源代理(仅 yarn web:serve 开发环境)。
+ *
+ * 机器人告警服务不支持 CORS 且不可修改(docs/SPEC_playback_alarm_lane.md §12):
+ * development 构建中渲染进程把 http://{host}:{port}/rbrainrobot/... 改写为同源路径
+ * /robot-alarm-proxy/{host}/{port}/rbrainrobot/...(见 fetchRobotStatus.ts),浏览器
+ * 视其为同源请求、不发 OPTIONS 预检;dev server 再按路径中的 host/port 把请求转发到
+ * 真实服务——转发发生在 Node 侧,不受浏览器同源策略约束。
+ *
+ * host/port 来自应用设置、运行时可变,因此不能用静态 target,必须由 router 动态解析。
+ */
+const robotAlarmProxyPattern = /^\/robot-alarm-proxy\/([^/]+)\/(\d+)(?=\/|$)/;
+
+/** 从代理路径中解析真实目标(http://{host}:{port});路径畸形时返回 undefined */
+function robotAlarmProxyTarget(url: string | undefined): string | undefined {
+  const match = robotAlarmProxyPattern.exec(url ?? "");
+  return match ? `http://${match[1]}:${match[2]}` : undefined;
+}
+
 export type ConfigParams = {
   /** Directory to find `entrypoint` and `tsconfig.json`. */
   contextPath: string;
@@ -63,6 +82,18 @@ export const devServerConfig = (params: ConfigParams): WebpackConfiguration => (
       // Enable cross-origin isolation: https://resourcepolicy.fyi
       "cross-origin-opener-policy": "same-origin",
       "cross-origin-embedder-policy": "credentialless",
+    },
+
+    // 告警服务代理:见上方 robotAlarmProxyPattern 注释;生产构建与桌面端不经此代理
+    proxy: {
+      "/robot-alarm-proxy": {
+        // target 仅为路径畸形时的兜底(连接 127.0.0.1:9 被拒,按查询失败 toast);
+        // 正常请求的实际目标由 router 按路径中的 host/port 动态给出
+        target: "http://127.0.0.1:9",
+        changeOrigin: true,
+        router: (req) => robotAlarmProxyTarget(req.url) ?? "http://127.0.0.1:9",
+        pathRewrite: (reqPath) => reqPath.replace(robotAlarmProxyPattern, ""),
+      },
     },
 
     client: {

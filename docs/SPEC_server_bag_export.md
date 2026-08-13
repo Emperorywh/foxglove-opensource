@@ -34,7 +34,7 @@ BAG 文件,多选/全选后批量下载到本地;也可选择下载完成后直�
 | 9 | 入口位置 | **Start 页新增第 4 个按钮**,进入独立对话框视图(不塞进"打开连接"页,因为该页所有数据源都必须创建 Player) |
 | 10 | 本地目录选择 | **showDirectoryPicker**(File System Access API,Chrome/Edge);不支持的浏览器显示禁用说明 |
 | 11 | 进度与取消 | 总进度条 + 当前文件名 + 取消按钮;不做断点续传 |
-| 12 | 凭据存储 | IP/端口/用户名/路径存 localStorage;**密码只存内存**,每次重新输入 |
+| 12 | 凭据存储 | IP/端口/用户名/路径存 localStorage;**密码只存内存**,每次重新输入。**修订(2026-08-13)**:IP 改存 AppConfiguration `robotAlarm.host`,与"设置-通用-告警服务"的主机联动共用;端口/用户名仍存 localStorage |
 | 13 | 部分失败策略 | 跳过失败项继续,结束后汇总报告 + "重试失败项"按钮(重试范围含取消时未开始的排队项,见 §5 Step D) |
 | 14 | 同名文件冲突 | **开始前询问**一次,对全部冲突生效(全部覆盖 / 跳过已存在 / 取消) |
 | 15 | 桥接交付形态 | **仓库内 Node 包**(新 workspace 包,团队已有 Node 环境) |
@@ -177,6 +177,9 @@ BAG 文件,多选/全选后批量下载到本地;也可选择下载完成后直�
 | BAG 路径 | 文本,placeholder `/data/bags` | 非空,必须以 `/` 开头;提交前去掉结尾 `/` |
 
 - IP/端口/用户名/BAG 路径在成功连接后写入 localStorage(键见 §11),下次打开自动填充。
+  **修订(2026-08-13)**:IP 不再写 localStorage,改为写 AppConfiguration `robotAlarm.host`
+  (与告警服务主机联动);v2 遗留的 `foxglove.serverExport.host` key 成为死数据,不做迁移清理
+  (沿用"全新系统,无兼容代码"惯例)。端口不联动:SSH 默认 22,告警服务默认 50004,是两个不同的服务。
 - **Step A 恒为无连接态表单**:从 Step B 返回时先断开 SSH 与 WS(内存中的密码保留,
   再次点击 [连接并浏览] 可快速重连);不保留"已连接"的表单形态。
 - 点击 **[连接并浏览]**:
@@ -317,7 +320,8 @@ UI 文案映射(i18n key 略):
 
 | 数据 | 位置 | 说明 |
 |------|------|------|
-| host / port / username / bagPath | localStorage:`foxglove.serverExport.{host,port,username,bagPath}` | 成功连接后写入,下次预填 |
+| host | AppConfiguration:`robotAlarm.host`(2026-08-13 起,与告警服务主机联动共用) | 成功连接后写入;设置页修改后本表单预填跟随 |
+| port / username / bagPath | localStorage:`foxglove.serverExport.{port,username,bagPath}` | 成功连接后写入,下次预填 |
 | password | 仅 React state(内存) | 每次打开视图重新输入;视图关闭即丢 |
 | 目录句柄 | 仅内存 | 每次会话重选 |
 | 桥接地址 | 常量 `ws://127.0.0.1:8765` | 桥接 `--port` 改端口时需同步改常量;可配置化列为后续项 |

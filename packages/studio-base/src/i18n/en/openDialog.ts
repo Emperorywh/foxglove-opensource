@@ -81,6 +81,7 @@ export const openDialog = {
   serverExportFailed: "Failed",
   serverExportFilterPlaceholder: "Filter by file name",
   serverExportHost: "Server host",
+  serverExportHostSharedHint: "Synced with the robot alarm server host (Settings → General)",
   serverExportLeftoverZip:
     "The partial ZIP {{name}} could not be deleted — please remove it manually",
   serverExportMultiFileOpenDisabled:

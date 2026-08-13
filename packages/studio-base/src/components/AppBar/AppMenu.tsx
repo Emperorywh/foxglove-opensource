@@ -177,8 +177,9 @@ export function AppMenu(props: AppMenuProps): JSX.Element {
     ],
   );
 
-  // HELP
+  // HELP(帮助子菜单已在下方 JSX 中注释停用,其回调与菜单项一并停用,恢复时需同时取消注释)
 
+  /*
   const onAboutClick = useCallback(() => {
     dialogActions.preferences.open("about");
     handleNestedMenuClose();
@@ -216,6 +217,7 @@ export function AppMenu(props: AppMenuProps): JSX.Element {
     ],
     [onAboutClick, onDemoClick, onDocsClick, onSlackClick, t],
   );
+  */
 
   return (
     <>
@@ -255,14 +257,14 @@ export function AppMenu(props: AppMenuProps): JSX.Element {
         >
           {t("view")}
         </NestedMenuItem>
-        <NestedMenuItem
+        {/* <NestedMenuItem
           onPointerEnter={handleItemPointerEnter}
           items={helpItems}
           open={nestedMenu === "app-menu-help"}
           id="app-menu-help"
         >
           {t("help")}
-        </NestedMenuItem>
+        </NestedMenuItem> */}
       </Menu>
     </>
   );

@@ -17,6 +17,7 @@ export * from "./panelSettings";
 export * from "./panelToolbar";
 export * from "./plot";
 export * from "./problemsList";
+export * from "./robotAlarms";
 export * from "./settingsEditor";
 export * from "./stateTransitions";
 export * from "./threeDee";

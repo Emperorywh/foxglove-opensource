@@ -21,9 +21,10 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   ToggleButtonGroupProps,
+  Typography,
 } from "@mui/material";
 import moment from "moment-timezone";
-import { MouseEvent, useCallback, useMemo } from "react";
+import { MouseEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { makeStyles } from "tss-react/mui";
 
@@ -33,6 +34,10 @@ import OsContextSingleton from "@foxglove/studio-base/OsContextSingleton";
 import Stack from "@foxglove/studio-base/components/Stack";
 import { useAppTimeFormat } from "@foxglove/studio-base/hooks";
 import { useAppConfigurationValue } from "@foxglove/studio-base/hooks/useAppConfigurationValue";
+import {
+  isValidRobotAlarmPort,
+  useRobotAlarmConfiguration,
+} from "@foxglove/studio-base/hooks/useRobotAlarmConfiguration";
 import { Language } from "@foxglove/studio-base/i18n";
 import { reportError } from "@foxglove/studio-base/reportError";
 import { LaunchPreferenceValue } from "@foxglove/studio-base/types/LaunchPreferenceValue";
@@ -347,6 +352,77 @@ export function RosPackagePath(): React.ReactElement {
       value={rosPackagePath ?? ""}
       onChange={(event) => void setRosPackagePath(event.target.value)}
     />
+  );
+}
+
+/**
+ * 告警服务设置(SPEC §6.5):host + port 两个字段,AppConfiguration 持久化。
+ * 任一字段清空 = 禁用整个功能(不查询、不渲染、不 toast);空串会作为有效配置持久化。
+ */
+export function RobotAlarmServerSettings(): React.ReactElement {
+  const { t } = useTranslation("appSettings");
+  const { host, port, setHost, setPort } = useRobotAlarmConfiguration();
+
+  // 两个输入框均使用本地 draft,失焦后提交;外部变更同一 key 时同步 draft
+  const [hostDraft, setHostDraft] = useState(host);
+  const [portDraft, setPortDraft] = useState(port);
+  useEffect(() => {
+    setHostDraft(host);
+  }, [host]);
+  useEffect(() => {
+    setPortDraft(port);
+  }, [port]);
+
+  // port 允许空串;非空时必须是 1–65535 的十进制整数,非法值不入库并显示校验错误
+  const trimmedPort = portDraft.trim();
+  const portInvalid = trimmedPort !== "" && !isValidRobotAlarmPort(trimmedPort);
+
+  const commitHost = useCallback(() => {
+    // host 去除首尾空白后入库
+    const value = hostDraft.trim();
+    if (value !== host) {
+      void setHost(value);
+    }
+  }, [hostDraft, host, setHost]);
+
+  const commitPort = useCallback(() => {
+    if (portInvalid) {
+      return;
+    }
+    if (trimmedPort !== port) {
+      void setPort(trimmedPort);
+    }
+  }, [trimmedPort, port, portInvalid, setPort]);
+
+  return (
+    <Stack gap={1}>
+      <FormLabel>{t("robotAlarmServer")}:</FormLabel>
+      <Stack direction="row" gap={1}>
+        <TextField
+          fullWidth
+          label={t("robotAlarmHost")}
+          value={hostDraft}
+          onChange={(event) => {
+            setHostDraft(event.target.value);
+          }}
+          onBlur={commitHost}
+        />
+        <TextField
+          fullWidth
+          label={t("robotAlarmPort")}
+          value={portDraft}
+          error={portInvalid}
+          helperText={portInvalid ? t("robotAlarmPortInvalid") : undefined}
+          onChange={(event) => {
+            setPortDraft(event.target.value);
+          }}
+          onBlur={commitPort}
+        />
+      </Stack>
+      <Typography variant="caption" color="text.secondary">
+        {t("robotAlarmServerDescription")}
+      </Typography>
+    </Stack>
   );
 }
 

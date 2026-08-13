@@ -73,6 +73,7 @@ export const openDialog: Partial<TypeOptions["resources"]["openDialog"]> = {
   serverExportFailed: "失败",
   serverExportFilterPlaceholder: "按文件名过滤",
   serverExportHost: "服务器 IP",
+  serverExportHostSharedHint: "与「设置-通用-告警服务」的主机联动",
   serverExportLeftoverZip: "残留的部分 ZIP 文件 {{name}} 未能删除，请手动清理",
   serverExportMultiFileOpenDisabled: "多文件暂不支持直接打开，请先导出后再手动打开",
   serverExportNavigateBack: "后退",

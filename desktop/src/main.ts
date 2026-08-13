@@ -350,6 +350,10 @@ async function createMainWindow(bridgeUrl: string): Promise<void> {
       sandbox: true,
       preload: path.join(__dirname, "preload.js"),
       additionalArguments: [`--ssh-bridge-url=${bridgeUrl}`],
+      // 自用内网工具:机器人告警服务不支持 CORS 且不可修改,关闭同源策略,让渲染
+      // 进程直接跨域 fetch(docs/SPEC_playback_alarm_lane.md §12)。代价是窗口内
+      // 所有跨域限制同时失效,因此不得在此窗口加载不可信页面。
+      webSecurity: false,
     },
   });
 

@@ -14,6 +14,10 @@ export enum AppSetting {
   // ROS
   ROS_PACKAGE_PATH = "ros.ros_package_path",
 
+  // 告警服务(播放进度条告警泳道,空串 = 禁用);host 与"从服务器导出"(SSH) 的主机联动共用
+  ROBOT_ALARM_HOST = "robotAlarm.host",
+  ROBOT_ALARM_PORT = "robotAlarm.port",
+
   // Experimental features
   SHOW_DEBUG_PANELS = "showDebugPanels",
 
