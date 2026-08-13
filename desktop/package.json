@@ -15,6 +15,7 @@
     "dev": "node dev.mjs",
     "dist": "node build.mjs && electron-builder",
     "dist:dir": "node build.mjs && electron-builder --dir",
+    "dist:portable": "node build.mjs && electron-builder --win portable",
     "release": "node build.mjs && electron-builder --publish always"
   },
   "devDependencies": {
@@ -52,6 +53,9 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "shortcutName": "Foxglove Studio"
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-portable.${ext}"
     }
   }
 }

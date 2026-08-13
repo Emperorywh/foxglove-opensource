@@ -29,6 +29,7 @@
     "desktop:dev": "yarn workspace desktop dev",
     "desktop:dist": "yarn web:build:prod && yarn workspace desktop dist",
     "desktop:dist:dir": "yarn web:build:prod && yarn workspace desktop dist:dir",
+    "desktop:dist:portable": "yarn web:build:prod && yarn workspace desktop dist:portable",
     "desktop:release": "yarn web:build:prod && yarn workspace desktop release",
     "license-check": "ts-node ci/license-check.ts",
     "lint": "TIMING=1 eslint --report-unused-disable-directives --fix .",
