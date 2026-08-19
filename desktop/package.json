@@ -11,6 +11,7 @@
   "main": "dist/main.js",
   "scripts": {
     "bundle": "node build.mjs",
+    "icon": "node build-icon.mjs",
     "start": "node build.mjs && electron .",
     "dev": "node dev.mjs",
     "dist": "node build.mjs && electron-builder",

@@ -46,8 +46,11 @@ ELECTRON_MIRROR="https://npmmirror.com/mirrors/electron/" yarn install
 - 未注入官方的 `desktopBridge` 全局对象，因此 UI 与 web 版完全一致（设置页仍会显示
   “下载桌面版”链接）。`isDesktopApp()` 为 true 时启用的 package:// 拉取、自动更新等
   功能依赖闭源桥接实现，故未启用。
-- 自定义图标：把 `icon.ico`（256x256）放到 `desktop/resources/` 下，electron-builder
-  会自动使用。
+- 自定义图标：把 `icon.ico`（含 256x256 帧）放到 `desktop/resources/` 下，electron-builder
+  会自动使用（NSIS 安装/卸载程序图标对应 `installerIcon.ico` / `uninstallerIcon.ico`）。
+  也可以直接从 PNG 生成多尺寸 ico：`yarn workspace desktop icon [source.png]`，默认源为
+  `packages/studio-web/public/apple-touch-icon.png`（与 favicon 相同的 logo，但是方形
+  180x180；`public/favicon.ico` 本身只有 74x51 且实为改了扩展名的 PNG，不能直接用）。
 - 渲染进程沙箱开启（contextIsolation + sandbox，无 nodeIntegration），外部链接在
   系统浏览器中打开。
 
