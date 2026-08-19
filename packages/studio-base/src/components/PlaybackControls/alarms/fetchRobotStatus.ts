@@ -31,6 +31,7 @@ function robotStatusUrl(host: string, port: string): string {
  * - POST + JSON body,无鉴权;
  * - 10 分钟超时,超时抛出 message 为 "timeout" 的 Error(按查询失败处理);
  * - 响应校验(§4.3):HTTP ok、status_code === 200、data 为数组,任一不满足抛错;
+ *   HTTP 非 2xx 时错误信息附带截断后的响应体(dev 代理会把"目标不可达"等原因写进 body);
  *   例外(决策 #22):status_code 200 但 data 为 null/缺失表示服务端无告警数据,按空数组成功返回;
  * - 外部 signal(切换数据源/禁用/卸载)触发的中止原样透传 AbortError,由调用方静默处理;
  * - 无论成功、失败还是中止,finally 中都会清理超时定时器。
@@ -74,7 +75,20 @@ export async function fetchRobotStatus(args: {
       signal: controller.signal,
     });
     if (!res.ok) {
-      throw new Error(`HTTP ${res.status}`);
+      // HTTP 错误尽量带上响应体(截断 200 字符)作为失败原因:dev 代理目标不可达时
+      // onError 会把 "cannot reach http://... (ECONNREFUSED)" 写进 body(见
+      // packages/studio-web/src/webpackConfigs.ts),真实服务 4xx/5xx 的 body 也常含
+      // 具体原因;body 读取失败时退化为仅状态码
+      let detail = "";
+      try {
+        const text = (await res.text()).trim();
+        if (text !== "") {
+          detail = `: ${text.length > 200 ? `${text.slice(0, 200)}…` : text}`;
+        }
+      } catch {
+        // 忽略 body 读取失败,保留仅状态码的错误信息
+      }
+      throw new Error(`HTTP ${res.status}${detail}`);
     }
     const body = (await res.json()) as RobotStatusResponse;
     if (body.status_code !== 200) {

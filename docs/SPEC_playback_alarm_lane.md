@@ -361,6 +361,12 @@ queryKey 任一字段变化 / 禁用 / 组件卸载 → abort 在途请求,清�
 `告警查询失败:{原因}`,原因取 Error.message(如 `Failed to fetch` / `timeout` /
 `HTTP 500` / `status_code 400`)。i18n key 放 `robotAlarms` namespace。
 
+> 实施注记(2026-08-19):HTTP 非 2xx 时,错误信息附带截断至 200 字符的响应体;
+> development 代理在目标不可达(ECONNREFUSED/ENOTFOUND 等)时返回 502 + 明文原因 body
+> (`robot-alarm-proxy: cannot reach http://{host}:{port} ({错误码})`,见
+> `webpackConfigs.ts` 的 `onError`),toast 直接可见 `HTTP 502: robot-alarm-proxy: cannot reach ...`,
+> 便于排查配置错误与服务不可达。
+
 toast 附"重试"按钮(决策 #21):点击后移除当前 key 的 attempted/toasted 登记并触发
 effect 重跑,按同一查询键重新走一遍 loading → success/error;再次失败会再次 toast
 (去重记录已被重试清除)。重试请求在途期间忽略按钮的重复点击,避免并发重发。

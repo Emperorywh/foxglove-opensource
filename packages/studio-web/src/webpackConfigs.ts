@@ -93,6 +93,19 @@ export const devServerConfig = (params: ConfigParams): WebpackConfiguration => (
         changeOrigin: true,
         router: (req) => robotAlarmProxyTarget(req.url) ?? "http://127.0.0.1:9",
         pathRewrite: (reqPath) => reqPath.replace(robotAlarmProxyPattern, ""),
+        // 目标不可达(ECONNREFUSED/ENOTFOUND/超时等)时,http-proxy 默认只回 500 空响应,
+        // 页面上只能看到 "HTTP 500",排查不出原因。这里改写为 502 + 明文原因响应体
+        // (含真实目标与错误码),前端 fetchRobotStatus 会把错误响应体拼进 toast
+        onError: (err, req, res) => {
+          const target = robotAlarmProxyTarget(req.url) ?? "http://127.0.0.1:9";
+          const code = (err as NodeJS.ErrnoException).code;
+          const message = `robot-alarm-proxy: cannot reach ${target} (${code ?? err.message})`;
+          console.error(`[robot-alarm-proxy] ${message}`);
+          if (!res.headersSent) {
+            res.writeHead(502, { "Content-Type": "text/plain; charset=utf-8" });
+          }
+          res.end(message);
+        },
       },
     },
 

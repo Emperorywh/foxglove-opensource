@@ -23,6 +23,15 @@ function jsonResponse(body: unknown, init?: { ok?: boolean; status?: number }): 
   } as Response;
 }
 
+/** 构造带 text() 的 HTTP 错误响应(用于错误响应体透传测试) */
+function errorTextResponse(text: string, status: number): Response {
+  return {
+    ok: false,
+    status,
+    text: async () => text,
+  } as Response;
+}
+
 const ARGS = { host: "10.11.2.208", port: "50004", startMs: 1000, stopMs: 2000 };
 
 describe("fetchRobotStatus", () => {
@@ -77,10 +86,40 @@ describe("fetchRobotStatus", () => {
   });
 
   it("HTTP 非 2xx 抛出带状态码的错误", async () => {
+    // 该 mock 不提供 text(),同时覆盖 body 读取失败退化为仅状态码的路径
     global.fetch = jest.fn(async () =>
       jsonResponse({}, { ok: false, status: 500 }),
     ) as unknown as typeof fetch;
     await expect(fetchRobotStatus(ARGS)).rejects.toThrow("HTTP 500");
+    expect(clearTimeoutSpy).toHaveBeenCalled();
+  });
+
+  it("HTTP 错误附带响应体内容(dev 代理目标不可达的原因透传)", async () => {
+    global.fetch = jest.fn(async () =>
+      errorTextResponse(
+        "robot-alarm-proxy: cannot reach http://10.11.2.208:50004 (ECONNREFUSED)",
+        502,
+      ),
+    ) as unknown as typeof fetch;
+    await expect(fetchRobotStatus(ARGS)).rejects.toThrow(
+      "HTTP 502: robot-alarm-proxy: cannot reach http://10.11.2.208:50004 (ECONNREFUSED)",
+    );
+    expect(clearTimeoutSpy).toHaveBeenCalled();
+  });
+
+  it("HTTP 错误响应体超长时截断到 200 字符", async () => {
+    global.fetch = jest.fn(async () =>
+      errorTextResponse("x".repeat(500), 500),
+    ) as unknown as typeof fetch;
+    const error: unknown = await fetchRobotStatus(ARGS).catch((err: unknown) => err);
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toBe(`HTTP 500: ${"x".repeat(200)}…`);
+    expect(clearTimeoutSpy).toHaveBeenCalled();
+  });
+
+  it("HTTP 错误响应体为空白时仅报状态码", async () => {
+    global.fetch = jest.fn(async () => errorTextResponse("  \n  ", 404)) as unknown as typeof fetch;
+    await expect(fetchRobotStatus(ARGS)).rejects.toThrow("HTTP 404");
     expect(clearTimeoutSpy).toHaveBeenCalled();
   });
 
