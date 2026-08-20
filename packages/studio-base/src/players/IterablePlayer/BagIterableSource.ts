@@ -29,7 +29,14 @@ import {
   GetBackfillMessagesArgs,
 } from "./IIterableSource";
 
-type BagSource = { type: "file"; file: File } | { type: "remote"; url: string };
+/**
+ * bag 来源形态:file(Web 输入文件)、remote(HTTP URL)或 filelike(任意随机读
+ * 适配器——机器人导出包的 zip 条目区间视图,RangedFilelike,§11.2)。
+ */
+type BagSource =
+  | { type: "file"; file: File }
+  | { type: "remote"; url: string }
+  | { type: "filelike"; filelike: Filelike };
 
 export class BagIterableSource implements IIterableSource {
   readonly #source: BagSource;
@@ -63,6 +70,8 @@ export class BagIterableSource implements IIterableSource {
       await remoteReader.open();
 
       fileLike = remoteReader;
+    } else if (this.#source.type === "filelike") {
+      fileLike = this.#source.filelike;
     } else {
       fileLike = new BlobReader(this.#source.file);
     }

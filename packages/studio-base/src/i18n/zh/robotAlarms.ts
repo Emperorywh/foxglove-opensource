@@ -7,5 +7,7 @@ import { TypeOptions } from "i18next";
 export const robotAlarms: Partial<TypeOptions["resources"]["robotAlarms"]> = {
   alarmQueryFailed: "告警查询失败:{{reason}}",
   noAlarms: "没有告警",
+  packageNoAlarms: "导出包不含告警数据",
+  packageReadFailed: "读取导出包告警数据失败:{{reason}}",
   retry: "重试",
 };

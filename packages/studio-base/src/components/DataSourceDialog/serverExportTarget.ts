@@ -30,8 +30,17 @@ export type ServerExportTarget = {
   createWritable(name: string): Promise<ServerExportWritable>;
   /** Delete a partial product (a missing entry must surface so leftovers can be reported). */
   removeEntry(name: string): Promise<void>;
-  /** Read a finished file back — "export and open" re-ingests it as a local bag. */
+  /**
+   * Read a finished file back — the web closed-loop re-ingests it as a lazy File
+   * (FileSystemFileHandle.getFile()).
+   */
   readFile(name: string): Promise<File>;
+  /**
+   * 桌面闭环的导出包读取 URL(SPEC_robot_export_package.md §13):指向主进程静态
+   * 服务器的 Range 路由,GB 级 zip 不经 IPC 入内存。仅 DesktopExportTarget 实现;
+   * Web(FileSystemAccessTarget)不实现——闭环走 readFile 懒加载 File。
+   */
+  readFileUrl?(name: string): Promise<string>;
 };
 
 /** IPC surface exposed by the desktop preload as `globalThis.serverExportFs`. */
@@ -46,6 +55,8 @@ type DesktopExportFs = {
   abort(id: number): Promise<void>;
   remove(dir: string, name: string): Promise<void>;
   readFile(dir: string, name: string): Promise<Uint8Array>;
+  /** 闭环 Range 路由 URL(§13):主进程拼装 token 与静态服务器端口。 */
+  readFileUrl(dir: string, name: string): Promise<string>;
 };
 
 /** The desktop fs bridge, or undefined in the browser build. */
@@ -126,6 +137,10 @@ class DesktopExportTarget implements ServerExportTarget {
   public async readFile(name: string): Promise<File> {
     const bytes = await this.#fs.readFile(this.#dir, name);
     return new File([bytes], name);
+  }
+
+  public async readFileUrl(name: string): Promise<string> {
+    return await this.#fs.readFileUrl(this.#dir, name);
   }
 }
 

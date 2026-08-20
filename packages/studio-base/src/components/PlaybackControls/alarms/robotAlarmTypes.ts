@@ -26,10 +26,20 @@ export type RobotStatusResponse = {
   data?: unknown;
 };
 
-/** 经过 mergeAlarmIntervals 解析后的采样:附带解析出的告警码数组与本地时间串 */
+/** 经过 mergeAlarmIntervals 解析后的采样:附带解析出的告警码数组、中文描述/处理意见串与本地时间串 */
 export type AlarmSample = RobotStatusRecord & {
   /** 由 alarm_message 解析出的告警码(§4.4:split(";") → trim → 滤空) */
   alarmCodes: string[];
+  /**
+   * 由 alarmCodes 经内置码表翻译的中文描述串(决策 #3 修订:未知码保留原始码,
+   * 分号连接)。字段名与接口 alarm_message 同风格,tooltip 直接以此名展示
+   */
+  alarm_text: string;
+  /**
+   * 由 alarmCodes 经内置码表翻译的处理意见串(决策 #3 修订:无意见的码不产生
+   * 片段,全部无意见时为空串)。字段名风格与 alarm_text 一致
+   */
+  alarm_hint: string;
   /** 由 time 派生的本地时间串,格式 YYYY-MM-DD HH:mm:ss(用于 tooltip 展示) */
   localTime: string;
 };

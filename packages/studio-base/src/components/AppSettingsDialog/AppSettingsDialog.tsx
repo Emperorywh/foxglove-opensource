@@ -35,7 +35,6 @@ import {
   AutoUpdate,
   ColorSchemeSettings,
   LanguageSettings,
-  LaunchDefault,
   MessageFramerate,
   RobotAlarmServerSettings,
   RosPackagePath,
@@ -187,7 +186,7 @@ export function AppSettingsDialog(
               <MessageFramerate />
               <LanguageSettings />
               {supportsAppUpdates && <AutoUpdate />}
-              {!isDesktopApp() && <LaunchDefault />}
+              {/* {!isDesktopApp() && <LaunchDefault />} */}
               {isDesktopApp() && <RosPackagePath />}
               <RobotAlarmServerSettings />
               {/* <Stack>

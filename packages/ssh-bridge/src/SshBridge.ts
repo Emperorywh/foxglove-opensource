@@ -174,6 +174,9 @@ export class ClientSession {
       case "cancel":
         this.#handleCancel(message.target);
         return;
+      case "serverTime":
+        void this.#handleServerTime(message);
+        return;
       case "disconnect":
         this.#closeSsh();
         this.#transport.close();
@@ -309,6 +312,25 @@ export class ClientSession {
       Array.from({ length: Math.min(STAT_CONCURRENCY, symlinkIndexes.length) }, async () => { await worker(); }),
     );
     return entries.filter((entry): entry is ListEntry => entry != undefined);
+  }
+
+  /**
+   * serverTime(SPEC_robot_export_package.md §4.1):仅在 connected 之后可用,未连接
+   * 会话回 DISCONNECTED(沿用 list/download 的既有守卫模式)。失败映射为既有
+   * 错误码(IO_ERROR/TIMEOUT),客户端按决策 #27 回退浏览器时区。
+   */
+  async #handleServerTime(message: Extract<ClientMessage, { type: "serverTime" }>): Promise<void> {
+    const ssh = this.#ssh;
+    if (ssh == undefined) {
+      this.#send({ type: "error", requestId: message.requestId, code: "DISCONNECTED", message: "not connected" });
+      return;
+    }
+    try {
+      const { unixMs, tzOffsetMinutes } = await ssh.getServerTime();
+      this.#send({ type: "serverTime", requestId: message.requestId, unixMs, tzOffsetMinutes });
+    } catch (err: unknown) {
+      this.#sendError(message.requestId, err);
+    }
   }
 
   #handleDownload(message: Extract<ClientMessage, { type: "download" }>): void {

@@ -102,6 +102,19 @@ export interface PlayerSelection {
   /** Currently selected data source */
   selectedSource?: IDataSourceFactory;
 
+  /**
+   * 文件型数据源的成功选择参数(SPEC_robot_export_package.md §11.5,决策 #31):
+   * PlayerManager 在成功构建 player 时写入,切换/关闭时清空。告警泳道经此从
+   * 导入包 File 中提取 alarms.json。
+   */
+  selectedFiles?: File[];
+
+  /**
+   * 连接型数据源的成功选择参数(携带 url;§11.5):桌面闭环的导出包
+   * robot-export-package 以 connection 形态选择,取数方从 url 读取包内数据。
+   */
+  selectedParams?: Record<string, string | undefined>;
+
   /** List of available data sources */
   availableSources: readonly IDataSourceFactory[];
 

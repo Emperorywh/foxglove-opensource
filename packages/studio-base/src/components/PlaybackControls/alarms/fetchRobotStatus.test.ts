@@ -19,7 +19,8 @@ function jsonResponse(body: unknown, init?: { ok?: boolean; status?: number }): 
   return {
     ok: init?.ok ?? true,
     status: init?.status ?? 200,
-    json: async () => body,
+    // 双输出签名先读 text() 再内部 JSON.parse(§10):mock 提供 text() 即可
+    text: async () => JSON.stringify(body),
   } as Response;
 }
 
@@ -63,7 +64,9 @@ describe("fetchRobotStatus", () => {
     expect(JSON.parse(init.body as string)).toEqual({
       data: { start_time: 1000, stop_time: 2000 },
     });
-    expect(result).toEqual(records);
+    // 双输出:records 为解析结果,rawText 为响应原始 body 文本(§10)
+    expect(result.records).toEqual(records);
+    expect(result.rawText).toBe(JSON.stringify({ status_code: 200, data: records }));
     expect(clearTimeoutSpy).toHaveBeenCalled();
   });
 
@@ -143,7 +146,10 @@ describe("fetchRobotStatus", () => {
     // 线上无告警时的真实响应;用 JSON.parse 复现 JSON null(仓库 lint 禁 null 字面量)
     const body = JSON.parse('{"status_code":200,"message":"成功","data":null}') as unknown;
     global.fetch = jest.fn(async () => jsonResponse(body)) as unknown as typeof fetch;
-    await expect(fetchRobotStatus(ARGS)).resolves.toEqual([]);
+    await expect(fetchRobotStatus(ARGS)).resolves.toEqual({
+      rawText: JSON.stringify(body),
+      records: [],
+    });
     expect(clearTimeoutSpy).toHaveBeenCalled();
   });
 
@@ -151,8 +157,18 @@ describe("fetchRobotStatus", () => {
     global.fetch = jest.fn(async () =>
       jsonResponse({ status_code: 200, data: [] }),
     ) as unknown as typeof fetch;
-    await expect(fetchRobotStatus(ARGS)).resolves.toEqual([]);
+    await expect(fetchRobotStatus(ARGS)).resolves.toEqual({
+      rawText: JSON.stringify({ status_code: 200, data: [] }),
+      records: [],
+    });
     expect(clearTimeoutSpy).toHaveBeenCalled();
+  });
+
+  it("响应体非 JSON 时抛错(双输出路径先读文本再解析,§10)", async () => {
+    global.fetch = jest.fn(async () =>
+      ({ ok: true, status: 200, text: async () => "<html>gateway error</html>" }) as Response,
+    ) as unknown as typeof fetch;
+    await expect(fetchRobotStatus(ARGS)).rejects.toThrow("not valid JSON");
   });
 
   it("网络错误原样透传", async () => {

@@ -29,7 +29,7 @@ host/port 在 App 设置页可配置,默认 `10.11.2.208:50004`。
 |---|--------|------|
 | 1 | 展示形式 | **告警泳道**:进度条正下方一条与时间轴对齐的细轨道,有告警的时段渲染红色区间,悬停弹详情 tooltip |
 | 2 | 数据语义 | 接口返回约 1Hz 周期状态采样,`alarm_message` 为该时刻激活的告警码集合(空串=无告警);**相邻告警采样合并为连续红色区间**(§5) |
-| 3 | 告警码展示 | **直接显示原始码**(如 `261; 262`),不内置码表、不引入额外表接口 |
+| 3 | 告警码展示 | **直接显示原始码**(如 `261; 262`),不引入额外表接口。**修订(2026-08-20)**:内置静态码表(仓库内 `alarms.json`,构建期打包),tooltip 在 `alarm_message` 之后新增派生行 `alarm_text`(中文描述)与 `alarm_hint`(处理意见);原始码仍显示,码表缺失的码在译文中保留原始码 |
 | 4 | hover 详情内容 | **全部字段表格**(接口记录的所有字段) |
 | 5 | 详情取数 | **随鼠标位置取最近采样**:鼠标在区间内移动时,tooltip 实时切换为所指时刻最近的一条采样 |
 | 6 | 查询时机 | **每个查询键自动查询一次**:合格数据源首次进入 `PRESENT` 且起止时间可用后触发;同一键后续短暂 `BUFFERING` 不 abort、不重查(§8) |
@@ -162,6 +162,11 @@ Web 跨域调用的服务端最低 CORS 契约:
 - 防御性按 `time` 升序稳定排序(不假设服务端有序);输入记录不得原地排序/修改。
 - 告警码解析:`alarm_message.split(";")` → 逐段 `trim` → 滤空 → `string[]`。
   `"261;262;"` → `["261", "262"]`;`""` / `undefined` / 仅含分号空格 → `[]`(无告警)。
+- 告警码译文(决策 #3 修订,2026-08-20):按内置码表把 `alarmCodes` 派生为中文描述串
+  `alarm_text` 与处理意见串 `alarm_hint`:locale 记录整体选定(zh_CN 优先、缺失回退 en_US,
+  描述与意见取自同一条记录保证语言一致),以 "; " 连接。`alarm_text` 无条目的码保留
+  原始码;`alarm_hint` 对无意见的码(码表 hint 为空或码未收录)不产生片段,
+  全部无意见时为空串。
 - 记录字段宽松读取:除 `time`(必需,非数值则丢弃该条)与 `alarm_message` 外,其余字段
   原样透传用于展示,不做类型假设。
 - 若 `startMs` / `stopMs` 非有限数值或 `stopMs <= startMs`,直接返回空区间且不发接口请求。
@@ -179,6 +184,9 @@ type RobotStatusRecord = {
 
 type AlarmSample = RobotStatusRecord & {
   alarmCodes: string[];            // mergeAlarmIntervals 解析后的码(§4.4)
+  alarm_text: string;              // 由 alarmCodes 经内置码表翻译的中文描述(决策 #3 修订)
+  alarm_hint: string;              // 由 alarmCodes 经内置码表翻译的处理意见(决策 #3 修订)
+  localTime: string;               // 由 time 派生的本地时间串,用于 tooltip 展示
 };
 
 type AlarmInterval = {
@@ -255,10 +263,14 @@ bag 加载后"晚一拍"出现,控制行下移约 12px——一次性跳动,可�
   - 左列**英文原字段名**,右列值;`time` 行按 App 时区/时间格式设置格式化
     (`useAppTimeFormat`)。字符串、数字、布尔值用 `String(value)`;数组和对象使用
     `JSON.stringify(value)`,序列化失败时再回退 `String(value)`,避免显示为 `[object Object]`。
-  - 字段顺序固定为接口示例顺序:`id, time, alarm_message, action_info, task_id, power,
-    linear_speed, angle_speed, steer, work_model, agv_model, charge_model, fork_model,
-    load_model, release_model, reset_button`;记录中多出的未知字段追加在末尾(防御)。
-  - `alarm_message` 显示解析后的码,顿号/逗号连接:`261, 262`。
+  - 字段顺序固定为接口示例顺序:`id, time, localTime, alarm_message, alarm_text, alarm_hint,
+    action_info, task_id, power, linear_speed, angle_speed, steer, work_model, agv_model,
+    charge_model, fork_model, load_model, release_model, reset_button`(`localTime` /
+    `alarm_text` / `alarm_hint` 为本地派生字段,分别插在 `time` / `alarm_message` 之后);
+    记录中多出的未知字段追加在末尾(防御)。
+  - `alarm_message` 显示解析后的码,顿号/逗号连接:`261, 262`;紧随其后的 `alarm_text`
+    显示中文译文、`alarm_hint` 显示处理意见(决策 #3 修订;译文中码表缺失的码保留
+    原始码,`alarm_hint` 无意见的码不产生片段)。
 - tooltip 非交互(`disableInteractive`),鼠标移出区间即关。
 
 ### 6.4 点击 seek(决策 #10)
@@ -291,6 +303,8 @@ bag 加载后"晚一拍"出现,控制行下移约 12px——一次性跳动,可�
 | 新文件 `.../components/PlaybackControls/alarms/robotAlarmTypes.ts` | `RobotStatusRecord`、`AlarmSample`、`AlarmInterval`、响应类型(§4/§5) |
 | 新文件 `.../alarms/fetchRobotStatus.ts` | fetch 封装:POST、JSON、10 分钟超时(`AbortController` + 显式 delay 的 `setTimeout`)、§4.3 校验;抛带用户可读 message 的 Error;development 构建改写为同源代理路径(§4.1 实施注记) |
 | 新文件 `.../alarms/mergeAlarmIntervals.ts` | §5 纯函数(含 `alarm_message` 解析) |
+| 新文件 `.../alarms/alarms.json` | 内置告警码码表数据源:告警码 → 多语言描述(决策 #3 修订) |
+| 新文件 `.../alarms/alarmDictionary.ts` | 码表加载与 `translateAlarmCodes` / `translateAlarmHints` 告警码翻译(描述与处理意见,决策 #3 修订) |
 | 新文件 `packages/studio-base/src/hooks/useRobotAlarmConfiguration.ts` | 直接使用 `useAppConfiguration()`,区分“未设置”与“已保存空串”,提供默认值和持久化 setter(§6.5) |
 | 新文件 `.../alarms/useRobotAlarms.tsx` | hook:订阅 MessagePipeline、PlayerSelection 与配置,驱动状态机,返回 `{status, intervals}`;失败时 toast 并附"重试"按钮(§8、决策 #21) |
 | 新文件 `.../PlaybackControls/AlarmLane.tsx` | 泳道渲染、hover tooltip、点击 seek(§6) |
@@ -436,8 +450,9 @@ effect 重跑,按同一查询键重新走一遍 loading → success/error;再次
 3. **泳道晚出现导致的一次性布局跳动**:异步查询使然,已被"无告警完全隐藏"的决策覆盖(§6.2)。
 4. **服务端单次返回量级**:按几十分钟 bag 设计(决策 #16);若实际打开多小时 bag 导致响应
    过大/超时,后续再加请求分段,当前不做。
-5. **告警码无码表**(决策 #3):用户需自行知晓码含义;日后若提供码表接口,仅需改 tooltip
-   渲染层,数据层不受影响。
+5. **告警码码表为静态快照**(决策 #3 修订,2026-08-20):内置 `alarms.json` 随仓库更新,
+   机器人新增告警码未入表时 `alarm_text` 对应位置保留原始码,需同步更新数据源文件;
+   日后若提供在线码表接口,仅需替换 `alarmDictionary` 的取数,数据层不受影响。
 
 ## 13. 测试要求
 
@@ -445,6 +460,9 @@ effect 重跑,按同一查询键重新走一遍 loading → success/error;再次
   超阈值断开、`告警 → 明确无告警 → 告警` 必须断开、乱序与重复时间、越界/非有限 time、
   输入不被修改、起止双端裁剪、裁剪后零长度丢弃、末区间封顶 `stopMs`,以及 `alarm_message` 的尾分号/空串/
   仅分号/缺失字段解析。
+- **必需——码表翻译**:`translateAlarmCodes` 覆盖已知码取 zh_CN 描述、多码 "; " 连接、
+  未知码保留原始码(可与已知码混排)、空数组返回空串;`translateAlarmHints` 覆盖已知码
+  取 zh_CN 处理意见、无意见/未知码不产生片段、全部无意见返回空串(决策 #3 修订)。
 - **必需——请求封装**:`fetchRobotStatus` 用 mock fetch 覆盖请求 URL/body、HTTP 非 2xx、
   `status_code ≠ 200`、`data` 非数组、`data` 为 `null`(成功空数据,决策 #22)、成功空数组、
   外部 abort 透传、超时错误,并验证每条路径都清理 timeout;主动 abort 不 toast 由 hook 状态机测试覆盖。

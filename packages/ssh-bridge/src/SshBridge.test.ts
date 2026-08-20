@@ -58,6 +58,12 @@ class FakeSshSession implements SshSession {
   public closed = false;
   /** When set, openReadStream returns this controllable stream instead of one from fileData. */
   public nextStream: Readable | undefined;
+  /** getServerTime 的固定返回值(mock connector,§4.2);getServerTimeError 优先。 */
+  public serverTime: { unixMs: number; tzOffsetMinutes: number } = {
+    unixMs: 1787191264652,
+    tzOffsetMinutes: 480,
+  };
+  public getServerTimeError: SshError | undefined;
 
   #closeCallbacks: (() => void)[] = [];
 
@@ -81,6 +87,13 @@ class FakeSshSession implements SshSession {
     }
     // Default canonicalization for tests: strip trailing slashes.
     return path.length > 1 ? path.replace(/\/+$/, "") : path;
+  }
+
+  public async getServerTime(): Promise<{ unixMs: number; tzOffsetMinutes: number }> {
+    if (this.getServerTimeError != undefined) {
+      throw this.getServerTimeError;
+    }
+    return this.serverTime;
   }
 
   public async statFollow(
@@ -212,6 +225,74 @@ describe("SshBridge frame state machine", () => {
       expect.objectContaining({ code: "BAD_REQUEST" }),
     ]);
     expect(transport.closed).toBe(true);
+  });
+
+  it("rejects hello v3 (v4 bump is incompatible, SPEC_robot_export_package.md §4.1)", () => {
+    const { transport, session } = makeFixture();
+    session.handleText(JSON.stringify({ type: "hello", version: 3 }));
+    expect(transport.messagesOfType("error")).toEqual([
+      expect.objectContaining({
+        code: "BAD_REQUEST",
+        message: expect.stringContaining("unsupported protocol version 3"),
+      }),
+    ]);
+    expect(transport.closed).toBe(true);
+  });
+
+  it("accepts hello v4 and answers serverTime after connect", async () => {
+    const { transport, session, ssh } = makeFixture();
+    ssh.serverTime = { unixMs: 1787191264000, tzOffsetMinutes: -300 };
+    session.handleText(JSON.stringify({ type: "hello", version: PROTOCOL_VERSION }));
+    session.handleText(
+      JSON.stringify({
+        type: "connect",
+        requestId: "c1",
+        host: "192.168.1.10",
+        port: 22,
+        username: "nvidia",
+        password: "secret",
+      }),
+    );
+    await flushAsync();
+    session.handleText(JSON.stringify({ type: "serverTime", requestId: "st1" }));
+    await flushAsync();
+    expect(transport.messagesOfType("serverTime")).toEqual([
+      { type: "serverTime", requestId: "st1", unixMs: 1787191264000, tzOffsetMinutes: -300 },
+    ]);
+  });
+
+  it("answers serverTime with DISCONNECTED before connect (§4.1)", async () => {
+    const { transport, session } = makeFixture();
+    session.handleText(JSON.stringify({ type: "hello", version: PROTOCOL_VERSION }));
+    session.handleText(JSON.stringify({ type: "serverTime", requestId: "st1" }));
+    await flushAsync();
+    const errors = transport.messagesOfType("error");
+    expect(errors).toEqual([
+      expect.objectContaining({ requestId: "st1", code: "DISCONNECTED" }),
+    ]);
+  });
+
+  it("maps getServerTime failure to an error response (client falls back per decision #27)", async () => {
+    const { transport, session, ssh } = makeFixture();
+    ssh.getServerTimeError = new SshError("IO_ERROR", "unparseable date output");
+    session.handleText(JSON.stringify({ type: "hello", version: PROTOCOL_VERSION }));
+    session.handleText(
+      JSON.stringify({
+        type: "connect",
+        requestId: "c1",
+        host: "192.168.1.10",
+        port: 22,
+        username: "nvidia",
+        password: "secret",
+      }),
+    );
+    await flushAsync();
+    session.handleText(JSON.stringify({ type: "serverTime", requestId: "st1" }));
+    await flushAsync();
+    expect(transport.messagesOfType("serverTime")).toEqual([]);
+    expect(transport.messagesOfType("error")).toEqual([
+      expect.objectContaining({ requestId: "st1", code: "IO_ERROR" }),
+    ]);
   });
 
   it("rejects a duplicate hello and closes", () => {

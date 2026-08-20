@@ -3,9 +3,9 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 /**
- * Browser client for the local SSH bridge (packages/ssh-bridge), protocol v3.
- * See docs/SPEC_server_bag_export.md §4.3, docs/SPEC_server_file_export_zip.md §4 and
- * docs/SPEC_server_file_browser.md §4.
+ * Browser client for the local SSH bridge (packages/ssh-bridge), protocol v4.
+ * See docs/SPEC_server_bag_export.md §4.3, docs/SPEC_server_file_export_zip.md §4,
+ * docs/SPEC_server_file_browser.md §4 and docs/SPEC_robot_export_package.md §4.
  *
  * The protocol types are mirrored here (rather than imported from the bridge package)
  * because the bridge package targets Node.js; the two sides are version-checked at
@@ -24,7 +24,7 @@ export function defaultBridgeUrl(): string {
   return (globalThis as { sshBridgeUrl?: string }).sshBridgeUrl ?? BRIDGE_URL;
 }
 
-const PROTOCOL_VERSION = 3;
+const PROTOCOL_VERSION = 4;
 const HELLO_TIMEOUT_MS = 5000;
 
 export type ServerExportListEntry = {
@@ -224,6 +224,29 @@ export class ServerExportBridgeClient {
   }
 
   /**
+   * 机器人时钟与时区(SPEC_robot_export_package.md §4.1,协议 v4):桥接以固定
+   * `date` 命令读取。失败(执行被拒/超时/输出不可解析)按 ServerExportError 抛出,
+   * 调用方按决策 #27 回退浏览器时区。
+   */
+  public async requestServerTime(): Promise<{
+    unixMs: number;
+    tzOffsetMinutes: number;
+  }> {
+    const message = await this.#request({
+      type: "serverTime",
+      requestId: this.#allocRequestId(),
+    });
+    if (
+      message.type !== "serverTime" ||
+      typeof message.unixMs !== "number" ||
+      typeof message.tzOffsetMinutes !== "number"
+    ) {
+      throw new ServerExportError("BAD_REQUEST", "unexpected response to serverTime");
+    }
+    return { unixMs: message.unixMs, tzOffsetMinutes: message.tzOffsetMinutes };
+  }
+
+  /**
    * Download one file. Resolves with the outcome once the bridge sends the terminal
    * message; rejects with ServerExportError on protocol/IO/local-write failure.
    * Cancel race ordering follows the bridge's send order (SPEC §4.3): a fileEnd that
@@ -306,6 +329,7 @@ export class ServerExportBridgeClient {
     switch (message.type) {
       case "connected":
       case "list":
+      case "serverTime":
         this.#resolvePending(message);
         return;
       case "fileStart":

@@ -3,16 +3,21 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 /**
- * Wire protocol v3 between the browser (Foxglove Studio server-export view) and the
+ * Wire protocol v4 between the browser (Foxglove Studio server-export view) and the
  * local SSH bridge. See docs/SPEC_server_bag_export.md §4.3,
- * docs/SPEC_server_file_export_zip.md §4 and docs/SPEC_server_file_browser.md §4.
+ * docs/SPEC_server_file_export_zip.md §4, docs/SPEC_server_file_browser.md §4 and
+ * docs/SPEC_robot_export_package.md §4.
  *
  * Client → bridge messages are JSON text frames. Bridge → client messages are JSON text
  * frames plus binary frames carrying file contents between `fileStart` and the terminal
  * message (`fileEnd` / `canceled` / `error`) of a download.
+ *
+ * v4 (SPEC_robot_export_package.md §4.1):新增 `serverTime` 消息对——桥接以固定
+ * `date` 命令读取机器人 Unix 时间与时区偏移,不做任意 exec。协议不做向后兼容,
+ * 双向版本不匹配即报"版本不兼容"。
  */
 
-export const PROTOCOL_VERSION = 3;
+export const PROTOCOL_VERSION = 4;
 
 /** Maximum size of a single binary frame carrying file data. */
 export const MAX_BINARY_FRAME_BYTES = 1024 * 1024;
@@ -64,6 +69,7 @@ export type ClientMessage =
   | { type: "download"; requestId: string; path: string }
   | { type: "ack"; target: string; bytes: number }
   | { type: "cancel"; target: string }
+  | { type: "serverTime"; requestId: string }
   | { type: "disconnect" };
 
 export type ServerMessage =
@@ -73,6 +79,14 @@ export type ServerMessage =
   | { type: "fileStart"; requestId: string; name: string; size: number }
   | { type: "fileEnd"; requestId: string; bytes: number }
   | { type: "canceled"; requestId: string }
+  | {
+      type: "serverTime";
+      requestId: string;
+      /** 机器人当前 Unix 时间(毫秒,机器人时钟)。 */
+      unixMs: number;
+      /** 机器人时区相对 UTC 的偏移(分钟,本地时间超前 UTC;UTC+8 → +480)。 */
+      tzOffsetMinutes: number;
+    }
   | { type: "error"; requestId?: string; code: ErrorCode; message: string }
   | { type: "sshClosed"; reason: "idle" | "error"; message: string };
 
@@ -193,6 +207,11 @@ export function parseClientMessage(data: string): ClientMessage | undefined {
     case "cancel":
       if (isString(parsed.target)) {
         return { type: "cancel", target: parsed.target };
+      }
+      return undefined;
+    case "serverTime":
+      if (isString(parsed.requestId)) {
+        return { type: "serverTime", requestId: parsed.requestId };
       }
       return undefined;
     case "disconnect":

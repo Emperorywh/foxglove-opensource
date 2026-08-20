@@ -17,12 +17,15 @@ import { AlarmInterval, AlarmSample } from "./alarms/robotAlarmTypes";
 import { useRobotAlarms } from "./alarms/useRobotAlarms";
 
 // tooltip 字段顺序固定为接口示例顺序(SPEC §6.3);记录中多出的未知字段追加在末尾。
-// localTime 是本地派生字段(不在接口示例中),手动排在 time 之后
+// localTime / alarm_text / alarm_hint 是本地派生字段(不在接口示例中),
+// 分别手动排在 time / alarm_message 之后
 const FIELD_ORDER = [
   "id",
   "time",
   "localTime",
   "alarm_message",
+  "alarm_text",
+  "alarm_hint",
   "action_info",
   "task_id",
   "power",

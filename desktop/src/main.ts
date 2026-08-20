@@ -6,8 +6,9 @@ import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
 import { autoUpdater } from "electron-updater";
 import { WriteStream, createReadStream, createWriteStream } from "fs";
 import { readFile, stat, unlink } from "fs/promises";
-import { createServer } from "http";
+import { createServer, IncomingMessage, ServerResponse } from "http";
 import { AddressInfo } from "net";
+import { randomBytes } from "node:crypto";
 import path from "path";
 
 import { DEFAULT_PORT, startBridgeServer } from "@foxglove/ssh-bridge/server";
@@ -45,11 +46,117 @@ function webRoot(): string {
   return path.join(__dirname, "..", "web-dist");
 }
 
+/**
+ * 导出包闭环读取路由的随机会话密钥(SPEC_robot_export_package.md §13):主进程
+ * 内存持有、不落盘;重启即失效(闭环 URL 因此不写"最近数据源",§11.5)。
+ */
+const exportedFileToken = randomBytes(24).toString("hex");
+/** 本会话最近一次选择的导出目录——闭环路由的目录白名单(§13)。 */
+let lastExportDir: string | undefined;
+/** 内嵌静态服务器端口(readFileUrl 拼装闭环 URL 用,窗口创建后即固定)。 */
+let staticServerPort: number | undefined;
+
+/**
+ * `/exported-file/<token>/<name>`(§13):以 Range 支持流式返回本次导出目录里的
+ * 文件——桌面闭环的「立即导入播放」经 CachedFilelike 走该 URL 随机访问 GB 级 zip,
+ * 不把整文件搬进渲染进程内存。校验失败一律 404:
+ * - `<name>` 复用 serverExport IPC 的既有裸文件名校验(exportFilePath);
+ * - 父目录必须等于本会话最近一次选择的导出目录(目录白名单);
+ * - token 必须与本进程随机会话密钥一致。
+ * 返回 true 表示请求已处理(命中该路由)。
+ */
+function handleExportedFileRequest(
+  req: IncomingMessage,
+  res: ServerResponse,
+  urlPath: string,
+): boolean {
+  const prefix = "/exported-file/";
+  if (!urlPath.startsWith(prefix)) {
+    return false;
+  }
+  const notFound = (): void => {
+    res.writeHead(404);
+    res.end();
+  };
+  const rest = urlPath.slice(prefix.length);
+  const slash = rest.indexOf("/");
+  if (slash <= 0) {
+    notFound();
+    return true;
+  }
+  const token = rest.slice(0, slash);
+  const name = rest.slice(slash + 1);
+  if (token !== exportedFileToken || lastExportDir == undefined) {
+    notFound();
+    return true;
+  }
+  let filePath: string;
+  try {
+    filePath = exportFilePath(lastExportDir, name);
+  } catch {
+    notFound();
+    return true;
+  }
+  void (async () => {
+    const info = await stat(filePath).catch(() => undefined);
+    if (info == undefined || !info.isFile()) {
+      notFound();
+      return;
+    }
+    // Range 支持(该服务器的首个 Range 路径,其余静态请求沿用整文件 200):
+    // 支持 bytes=a-b / a- / -n(后缀)三种形态。
+    const rangeHeader = req.headers.range;
+    const match = rangeHeader != undefined ? /^bytes=(\d*)-(\d*)$/.exec(rangeHeader.trim()) : undefined;
+    if (match != undefined) {
+      let start: number;
+      let end: number;
+      if (match[1] === "") {
+        // 后缀 range:bytes=-n → 最后 n 字节
+        const suffix = Number(match[2]);
+        start = Math.max(0, info.size - suffix);
+        end = info.size - 1;
+      } else {
+        start = Number(match[1]);
+        end = match[2] === "" ? info.size - 1 : Number(match[2]);
+      }
+      if (start >= info.size || end < start) {
+        res.writeHead(416, { "Content-Range": `bytes */${info.size}` });
+        res.end();
+        return;
+      }
+      res.writeHead(206, {
+        "Content-Type": "application/octet-stream",
+        "Content-Length": end - start + 1,
+        "Content-Range": `bytes ${start}-${end}/${info.size}`,
+        "Accept-Ranges": "bytes",
+        "Cache-Control": "no-store",
+      });
+      createReadStream(filePath, { start, end }).pipe(res);
+      return;
+    }
+    res.writeHead(200, {
+      "Content-Type": "application/octet-stream",
+      "Content-Length": info.size,
+      "Accept-Ranges": "bytes",
+      "Cache-Control": "no-store",
+    });
+    createReadStream(filePath).pipe(res);
+  })().catch((err: unknown) => {
+    console.warn(`[exported-file] ${String(err)}`);
+    res.writeHead(500);
+    res.end();
+  });
+  return true;
+}
+
 /** Serve the web build on an ephemeral loopback port. Returns the bound port. */
 async function startStaticServer(root: string): Promise<number> {
   const server = createServer((req, res) => {
     void (async () => {
       const urlPath = decodeURIComponent(new URL(req.url ?? "/", "http://localhost").pathname);
+      if (handleExportedFileRequest(req, res, urlPath)) {
+        return;
+      }
       let filePath = path.normalize(path.join(root, urlPath));
       // Reject path traversal outside the web root.
       if (filePath !== root && !filePath.startsWith(root + path.sep)) {
@@ -176,7 +283,12 @@ function setupServerExportIpc(): void {
         ? await dialog.showOpenDialog(options)
         : await dialog.showOpenDialog(win, options);
     const dir = result.filePaths[0];
-    return result.canceled || dir == undefined ? undefined : dir;
+    if (result.canceled || dir == undefined) {
+      return undefined;
+    }
+    // 目录白名单:闭环路由只服务本会话最近一次选择的导出目录(§13)。
+    lastExportDir = dir;
+    return dir;
   });
 
   ipcMain.handle("serverExport:exists", async (_event, dir: unknown, name: unknown) => {
@@ -284,8 +396,22 @@ function setupServerExportIpc(): void {
   });
 
   ipcMain.handle("serverExport:readFile", async (_event, dir: unknown, name: unknown) => {
-    // "Export and open" re-ingests the finished file as a local bag in the renderer.
+    // Web 闭环的兜底读取(整文件过 IPC——仅小包适用;桌面闭环优先 readFileUrl)。
     return await readFile(exportFilePath(dir, name));
+  });
+
+  ipcMain.handle("serverExport:readFileUrl", (_event, dir: unknown, name: unknown) => {
+    // 闭环 Range 路由 URL(§13):复用裸文件名校验;目录必须命中白名单(最近一
+    // 次选择的导出目录),与路由侧校验一致;token/端口仅主进程持有。
+    const bareName = exportFilePath(dir, name);
+    if (dir !== lastExportDir) {
+      throw new Error("directory is not the current export directory");
+    }
+    if (staticServerPort == undefined) {
+      throw new Error("static server is not running");
+    }
+    const encoded = path.basename(bareName);
+    return `http://127.0.0.1:${staticServerPort}/exported-file/${exportedFileToken}/${encodeURIComponent(encoded)}`;
   });
 
   app.on("will-quit", () => {
@@ -336,6 +462,7 @@ function setupAutoUpdates(): void {
 
 async function createMainWindow(bridgeUrl: string): Promise<void> {
   const port = await startStaticServer(webRoot());
+  staticServerPort = port;
 
   const win = new BrowserWindow({
     width: 1440,

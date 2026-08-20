@@ -8,6 +8,8 @@ import { PropsWithChildren, ReactNode } from "react";
 
 import { Time } from "@foxglove/rostime";
 import { AppSetting } from "@foxglove/studio-base/AppSetting";
+import { ServerExportWritable } from "@foxglove/studio-base/components/DataSourceDialog/serverExportTarget";
+import { createZipWriter } from "@foxglove/studio-base/components/DataSourceDialog/serverExportZip";
 import MockMessagePipelineProvider from "@foxglove/studio-base/components/MessagePipeline/MockMessagePipelineProvider";
 import { useRobotAlarms } from "@foxglove/studio-base/components/PlaybackControls/alarms/useRobotAlarms";
 import AppConfigurationContext, {
@@ -50,7 +52,8 @@ const ROSBRIDGE_SOURCE: IDataSourceFactory = {
 };
 
 function jsonResponse(body: unknown): Response {
-  return { ok: true, status: 200, json: async () => body } as Response;
+  // 双输出签名先读 text() 再内部 JSON.parse(§10):mock 提供 text() 即可
+  return { ok: true, status: 200, text: async () => JSON.stringify(body) } as Response;
 }
 
 type MockRequest = {
@@ -123,9 +126,17 @@ type Harness = {
   endTime?: Time;
   noActiveData?: boolean;
   source?: IDataSourceFactory;
+  /** §11.5 通道:文件型选择的 File 列表(包内 file 形态)。 */
+  selectedFiles?: File[];
+  /** §11.5 通道:连接型选择的参数(包内 remote 形态,携带 url)。 */
+  selectedParams?: Record<string, string | undefined>;
 };
 
-function setup(harnessOverrides?: Partial<Harness>, seed?: Record<string, string>) {
+function setup(
+  harnessOverrides?: Partial<Harness>,
+  seed?: Record<string, string>,
+  opts?: { installFetch?: (requests: MockRequest[]) => jest.Mock },
+) {
   const config = new FakeAppConfiguration();
   for (const [key, value] of Object.entries(seed ?? {})) {
     config.seed(key, value);
@@ -142,7 +153,8 @@ function setup(harnessOverrides?: Partial<Harness>, seed?: Record<string, string
   };
 
   const requests: MockRequest[] = [];
-  const fetchMock = installManualFetch(requests);
+  // fetch 安装发生在 renderHook 之前——remote 形态的包内读取在挂载 effect 里即刻发起。
+  const fetchMock = (opts?.installFetch ?? installManualFetch)(requests);
 
   function Wrapper({ children }: PropsWithChildren) {
     return (
@@ -154,6 +166,8 @@ function setup(harnessOverrides?: Partial<Harness>, seed?: Record<string, string
             availableSources: [],
             recentSources: [],
             selectedSource: harness.source,
+            selectedFiles: harness.selectedFiles,
+            selectedParams: harness.selectedParams,
           }}
         >
           <MockMessagePipelineProvider
@@ -488,5 +502,226 @@ describe("useRobotAlarms", () => {
       expect(result.current.status).toBe("success");
     });
     expect(result.current.intervals).toHaveLength(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 包内路径(SPEC_robot_export_package.md §12,robot-export-package 数据源)
+// ---------------------------------------------------------------------------
+
+const EXPORT_PACKAGE_SOURCE: IDataSourceFactory = {
+  id: "robot-export-package",
+  type: "file",
+  displayName: "Robot Export Package",
+  initialize: () => undefined,
+};
+
+/** 内存 writable 夹具:拼出 writer 产物。 */
+class MemoryWritable implements ServerExportWritable {
+  public chunks: Uint8Array[] = [];
+  public async write(chunk: Uint8Array): Promise<void> {
+    this.chunks.push(chunk);
+  }
+  public async close(): Promise<void> {}
+  public async abort(): Promise<void> {}
+  public bytes(): Uint8Array {
+    const total = this.chunks.reduce((acc, chunk) => acc + chunk.byteLength, 0);
+    const out = new Uint8Array(total);
+    let cursor = 0;
+    for (const chunk of this.chunks) {
+      out.set(chunk, cursor);
+      cursor += chunk.byteLength;
+    }
+    return out;
+  }
+}
+
+/** 构造一个带 alarms.json 的导出包 zip(可选缺失);返回 File 与原始字节。 */
+async function buildPackageZip(
+  alarms: { rawText: string } | undefined,
+): Promise<{ file: File; bytes: Uint8Array }> {
+  const writable = new MemoryWritable();
+  const writer = createZipWriter(writable);
+  writer.beginEntry("bags/2026-08-20-09-00-00_0.bag", Date.UTC(2026, 7, 20), 4);
+  await writer.pushEntryChunk(new Uint8Array(4));
+  await writer.endEntry(4);
+  if (alarms != undefined) {
+    writer.beginEntry("alarms.json", Date.UTC(2026, 7, 20), alarms.rawText.length);
+    await writer.pushEntryChunk(new TextEncoder().encode(alarms.rawText));
+    await writer.endEntry(alarms.rawText.length);
+  }
+  await writer.finalize();
+  const bytes = writable.bytes();
+  return { file: new File([bytes as BlobPart], "robot-export.zip"), bytes };
+}
+
+// JSON.stringify 在本仓库 lib 定义下可返回 undefined;?? "" 收窄类型
+const PACKAGE_ALARM_BODY =
+  JSON.stringify({
+    status_code: 200,
+    data: [
+      { time: 110000, alarm_message: "261;262;" },
+      { time: 111000, alarm_message: "261" },
+      { time: 112000, alarm_message: "" },
+    ],
+  }) ?? "";
+
+/**
+ * 构造最小 Response 假体:jsdom 环境没有 Response/ReadableStream 全局,BrowserHttpReader/
+ * FetchReader 只需要 ok/status/headers.get/body.getReader().read 这一小块表面。
+ */
+function fakeResponse(payload: Uint8Array): Response {
+  return {
+    ok: true,
+    status: 200,
+    statusText: "",
+    headers: {
+      get: (name: string) =>
+        name.toLowerCase() === "accept-ranges"
+          ? "bytes"
+          : name.toLowerCase() === "content-length"
+            ? String(payload.byteLength)
+            : undefined,
+    },
+    body: {
+      getReader: () => {
+        let index = 0;
+        return {
+          read: async () => {
+            if (index === 0) {
+              index += 1;
+              return { done: false, value: payload };
+            }
+            return { done: true, value: undefined };
+          },
+        };
+      },
+    },
+  } as unknown as Response;
+}
+
+/** 安装按 Range 请求切片服务 zip 字节的 fetch mock(remote 形态,§11.1 CachedFilelike)。 */
+function installRangeFetch(bytes: Uint8Array): jest.Mock {
+  const fetchMock = jest.fn(async (_url: string, init?: RequestInit) => {
+    const range = (init?.headers as { get(name: string): string | undefined } | undefined)?.get(
+      "range",
+    );
+    const match = range != undefined ? /bytes=(\d+)-(\d+)/.exec(range) : undefined;
+    if (match != undefined) {
+      const start = Number(match[1]);
+      const end = Number(match[2]);
+      return fakeResponse(bytes.subarray(start, end + 1));
+    }
+    // open() 探测:返回元信息(随即被 abort,不影响已 resolve 的响应)
+    return fakeResponse(bytes);
+  });
+  global.fetch = fetchMock as unknown as typeof fetch;
+  return fetchMock;
+}
+
+describe("useRobotAlarms — robot-export-package 包内路径(§12)", () => {
+  beforeEach(() => {
+    mockEnqueueSnackbar.mockClear();
+  });
+
+  afterEach(() => {
+    global.fetch = async () => {
+      throw new Error("not available");
+    };
+  });
+
+  it("file 形态:不查网络,从 zip 内 alarms.json 成功出区间", async () => {
+    const { file } = await buildPackageZip({ rawText: PACKAGE_ALARM_BODY });
+    const { fetchMock, result } = setup({ source: EXPORT_PACKAGE_SOURCE, selectedFiles: [file] });
+    await waitFor(() => {
+      expect(result.current.status).toBe("success");
+    });
+    // 裁剪到 bag 起止(100s–200s)的逻辑复用,区间与在线路径一致
+    expect(result.current.intervals).toHaveLength(1);
+    expect(result.current.intervals[0]?.startMs).toBe(110000);
+    expect(result.current.intervals[0]?.endMs).toBe(112000);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(mockEnqueueSnackbar).not.toHaveBeenCalled();
+  });
+
+  it("不受 host/port 配置门控(空 host/port 仍可用)", async () => {
+    const { file } = await buildPackageZip({ rawText: PACKAGE_ALARM_BODY });
+    const { result } = setup(
+      { source: EXPORT_PACKAGE_SOURCE, selectedFiles: [file] },
+      { [AppSetting.ROBOT_ALARM_HOST]: "", [AppSetting.ROBOT_ALARM_PORT]: "" },
+    );
+    await waitFor(() => {
+      expect(result.current.status).toBe("success");
+    });
+    expect(result.current.intervals).toHaveLength(1);
+  });
+
+  it("remote 形态(selectedParams.url):经 Range fetch 读包内 alarms.json 成功出区间", async () => {
+    const { bytes } = await buildPackageZip({ rawText: PACKAGE_ALARM_BODY });
+    const view = setup(
+      {
+        source: EXPORT_PACKAGE_SOURCE,
+        selectedParams: { url: "http://127.0.0.1:1234/exported-file/token/robot-export.zip" },
+      },
+      undefined,
+      // Range 服务必须在挂载前就位:包内读取在 effect 里同步发起首个 fetch。
+      { installFetch: () => installRangeFetch(bytes) },
+    );
+    await waitFor(() => {
+      expect(view.result.current.status).toBe("success");
+    });
+    expect(view.result.current.intervals).toHaveLength(1);
+    expect(global.fetch).toHaveBeenCalled();
+  });
+
+  it("alarms.json 缺失:成功空数据 + 泳道隐藏 + 一次 info 提示,无重试按钮", async () => {
+    const { file } = await buildPackageZip(undefined);
+    const { result } = setup({ source: EXPORT_PACKAGE_SOURCE, selectedFiles: [file] });
+    await waitFor(() => {
+      expect(result.current.status).toBe("success");
+    });
+    expect(result.current.intervals).toHaveLength(0);
+    expect(mockEnqueueSnackbar).toHaveBeenCalledTimes(1);
+    expect(mockEnqueueSnackbar).toHaveBeenCalledWith("Export package contains no alarm data", {
+      variant: "info",
+    });
+    const options = mockEnqueueSnackbar.mock.calls.at(-1)?.[1] as { action?: ReactNode };
+    expect(options.action).toBeUndefined();
+  });
+
+  it("alarms.json 损坏:error toast(包内失败文案)+ 重试按钮重读 zip 后成功", async () => {
+    const corrupt = await buildPackageZip({ rawText: "{not json" });
+    const { harness, result, rerender } = setup({
+      source: EXPORT_PACKAGE_SOURCE,
+      selectedFiles: [corrupt.file],
+    });
+    await waitFor(() => {
+      expect(result.current.status).toBe("error");
+    });
+    expect(mockEnqueueSnackbar).toHaveBeenCalledTimes(1);
+    expect(mockEnqueueSnackbar).toHaveBeenCalledWith(
+      expect.stringContaining("Failed to read alarms from the export package"),
+      expect.objectContaining({ variant: "error" }),
+    );
+
+    // 换上完好内容后点重试(重试 = 重读 zip,§12.2):同一状态机重跑并成功
+    const fixed = await buildPackageZip({ rawText: PACKAGE_ALARM_BODY });
+    harness.selectedFiles = [fixed.file];
+    rerender();
+    const options = mockEnqueueSnackbar.mock.calls.at(-1)?.[1] as { action?: ReactNode };
+    const utils = render(<>{options.action}</>);
+    fireEvent.click(within(utils.container).getByRole("button", { name: "Retry" }));
+    await waitFor(() => {
+      expect(result.current.status).toBe("success");
+    });
+    expect(result.current.intervals).toHaveLength(1);
+  });
+
+  it("selectedFiles/selectedParams 缺失:隐藏不报错(边界 #24)", async () => {
+    const { fetchMock, result } = setup({ source: EXPORT_PACKAGE_SOURCE });
+    await act(async () => {});
+    expect(result.current.status).toBe("idle");
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(mockEnqueueSnackbar).not.toHaveBeenCalled();
   });
 });

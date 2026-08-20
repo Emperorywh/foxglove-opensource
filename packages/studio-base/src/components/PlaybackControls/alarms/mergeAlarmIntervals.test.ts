@@ -213,4 +213,16 @@ describe("mergeAlarmIntervals", () => {
     const intervals = mergeAlarmIntervals([alarmAt(5000)], 0, 10000);
     expect(intervals[0]?.samples[0]?.localTime).toBe(formatLocalTime(5000));
   });
+
+  it("区间 samples 附带由告警码翻译的中文描述 alarm_text", () => {
+    const intervals = mergeAlarmIntervals([alarmAt(5000, "261;262;")], 0, 10000);
+    expect(intervals[0]?.samples[0]?.alarm_text).toBe(
+      "IMU频率低于设置阈值; 前导航激光频率低于设置阈值",
+    );
+  });
+
+  it("区间 samples 附带由告警码翻译的处理意见 alarm_hint(无意见的码不产生片段)", () => {
+    const intervals = mergeAlarmIntervals([alarmAt(5000, "3;1000;")], 0, 10000);
+    expect(intervals[0]?.samples[0]?.alarm_hint).toBe("操作人员将周围障碍物清除,并按下复位按钮");
+  });
 });

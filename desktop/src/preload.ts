@@ -31,6 +31,7 @@ const CHANNELS = {
   abort: "serverExport:abort",
   remove: "serverExport:remove",
   readFile: "serverExport:readFile",
+  readFileUrl: "serverExport:readFileUrl",
 } as const;
 
 /**
@@ -60,4 +61,8 @@ contextBridge.exposeInMainWorld("serverExportFs", {
   remove: async (dir: string, name: string): Promise<void> => { await invoke(CHANNELS.remove, dir, name); },
   readFile: async (dir: string, name: string): Promise<Uint8Array> =>
     await invoke(CHANNELS.readFile, dir, name),
+  // 闭环 Range 路由 URL(SPEC_robot_export_package.md §13):主进程拼装 token,
+  // 渲染进程据此经 CachedFilelike 随机访问导出包 zip。
+  readFileUrl: async (dir: string, name: string): Promise<string> =>
+    await invoke(CHANNELS.readFileUrl, dir, name),
 });

@@ -2,7 +2,12 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { kindForName, parseClientMessage, validateDownloadPath } from "./protocol";
+import {
+  PROTOCOL_VERSION,
+  kindForName,
+  parseClientMessage,
+  validateDownloadPath,
+} from "./protocol";
 
 describe("kindForName", () => {
   it("classifies .bag files", () => {
@@ -158,6 +163,13 @@ describe("parseClientMessage", () => {
     });
   });
 
+  it("parses serverTime (v4)", () => {
+    expect(parseClientMessage(JSON.stringify({ type: "serverTime", requestId: "9" }))).toEqual({
+      type: "serverTime",
+      requestId: "9",
+    });
+  });
+
   it("rejects malformed frames", () => {
     expect(parseClientMessage("not json")).toBeUndefined();
     expect(parseClientMessage(JSON.stringify({}))).toBeUndefined();
@@ -166,6 +178,18 @@ describe("parseClientMessage", () => {
     expect(parseClientMessage(JSON.stringify({ type: "hello" }))).toBeUndefined();
     expect(parseClientMessage(JSON.stringify({ type: "list", requestId: "1" }))).toBeUndefined();
     expect(parseClientMessage(JSON.stringify({ type: "ack", target: "1" }))).toBeUndefined();
+    expect(
+      parseClientMessage(JSON.stringify({ type: "serverTime" })),
+    ).toBeUndefined();
+    expect(
+      parseClientMessage(JSON.stringify({ type: "serverTime", requestId: 9 })),
+    ).toBeUndefined();
     expect(parseClientMessage(JSON.stringify("just a string"))).toBeUndefined();
+  });
+});
+
+describe("PROTOCOL_VERSION", () => {
+  it("is 4 (v4 adds the serverTime pair, SPEC_robot_export_package.md §4.1)", () => {
+    expect(PROTOCOL_VERSION).toBe(4);
   });
 });

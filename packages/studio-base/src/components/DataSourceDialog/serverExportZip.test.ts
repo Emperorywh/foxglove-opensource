@@ -5,46 +5,28 @@
 import { unzipSync } from "fflate";
 
 import {
-  MAX_ZIP_BYTES,
-  ZipSizeLimitExceededError,
-  commonAncestorDir,
-  createZipWriter,
-  parentDir,
-  resolveZipNameConflict,
-  zipEntryName,
-  zipFileName,
-  zipSelectionTooLarge,
-} from "./serverExportZip";
+  BlobRandomAccessReader,
+  openZipArchive,
+} from "@foxglove/studio-base/players/IterablePlayer/zipArchiveReader";
 
-/** In-memory FileSystemWritableFileStream capturing every write call in order. */
-class MockWritable {
+import { ServerExportWritable } from "./serverExportTarget";
+import { createZipWriter, resolveZipNameConflict, robotExportZipFileName } from "./serverExportZip";
+
+/** 内存版 ServerExportWritable:收集字节,模拟本地写盘。 */
+class MemoryWritable implements ServerExportWritable {
   public chunks: Uint8Array[] = [];
   public closed = false;
   public aborted = false;
-  /** When set, writes block until release() is called (back-pressure testing). */
-  #gate: { promise: Promise<void>; release: () => void } | undefined;
+  public failWrites = false;
 
-  public gateWrites(): void {
-    let release: () => void = () => {};
-    this.#gate = {
-      promise: new Promise<void>((resolve) => {
-        release = resolve;
-      }),
-      release,
-    };
-  }
-
-  public release(): void {
-    this.#gate?.release();
-  }
-
-  public async write(data: Uint8Array): Promise<void> {
-    await this.#gate?.promise;
-    this.chunks.push(new Uint8Array(data));
+  public async write(chunk: Uint8Array): Promise<void> {
+    if (this.failWrites) {
+      throw new Error("disk full");
+    }
+    this.chunks.push(chunk);
   }
 
   public async close(): Promise<void> {
-    await this.#gate?.promise;
     this.closed = true;
   }
 
@@ -55,356 +37,270 @@ class MockWritable {
   public bytes(): Uint8Array {
     const total = this.chunks.reduce((acc, chunk) => acc + chunk.byteLength, 0);
     const out = new Uint8Array(total);
-    let offset = 0;
+    let cursor = 0;
     for (const chunk of this.chunks) {
-      out.set(chunk, offset);
-      offset += chunk.byteLength;
+      out.set(chunk, cursor);
+      cursor += chunk.byteLength;
     }
     return out;
   }
-
-  public asStream(): FileSystemWritableFileStream {
-    return this as unknown as FileSystemWritableFileStream;
-  }
 }
 
-/** Offsets of every local file header signature (PK\x03\x04) in the container. */
-function localHeaderOffsets(bytes: Uint8Array): number[] {
-  const offsets: number[] = [];
-  for (let i = 0; i + 4 <= bytes.length; i++) {
-    if (
-      bytes[i] === 0x50 &&
-      bytes[i + 1] === 0x4b &&
-      bytes[i + 2] === 0x03 &&
-      bytes[i + 3] === 0x04
-    ) {
-      offsets.push(i);
+function textBytes(text: string): Uint8Array {
+  return new TextEncoder().encode(text);
+}
+
+/** 在缓冲里查找小端 32 位签名,返回全部命中偏移。 */
+function findSignature(bytes: Uint8Array, signature: number): number[] {
+  const hits: number[] = [];
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  for (let i = 0; i + 4 <= bytes.byteLength; i++) {
+    if (view.getUint32(i, true) === signature) {
+      hits.push(i);
     }
   }
-  return offsets;
+  return hits;
 }
 
-function hasEndOfCentralDirectory(bytes: Uint8Array): boolean {
-  for (let i = 0; i + 4 <= bytes.length; i++) {
-    if (
-      bytes[i] === 0x50 &&
-      bytes[i + 1] === 0x4b &&
-      bytes[i + 2] === 0x05 &&
-      bytes[i + 3] === 0x06
-    ) {
-      return true;
-    }
+const DESCRIPTOR_SIG = 0x08074b50;
+const EOCD_SIG = 0x06054b50;
+const ZIP64_EOCD_SIG = 0x06064b50;
+const ZIP64_LOCATOR_SIG = 0x07064b50;
+
+async function writeArchive(
+  entries: { name: string; mtimeMs: number; data: Uint8Array; expectedSize?: number; actualSize?: number }[],
+  opts?: { __testMaxFieldValue?: number },
+): Promise<Uint8Array> {
+  const writable = new MemoryWritable();
+  const writer = createZipWriter(writable, opts);
+  for (const entry of entries) {
+    writer.beginEntry(entry.name, entry.mtimeMs, entry.expectedSize ?? entry.data.byteLength);
+    await writer.pushEntryChunk(entry.data);
+    await writer.endEntry(entry.actualSize ?? entry.data.byteLength);
   }
-  return false;
+  await writer.finalize();
+  return writable.bytes();
 }
 
-/** Decode the DOS date field of the local header at `offset` into calendar components. */
-function localHeaderDosDate(
-  bytes: Uint8Array,
-  offset: number,
-): { year: number; month: number; day: number } {
-  const view = new DataView(bytes.buffer, bytes.byteOffset + offset);
-  const date = view.getUint16(12, true);
-  return { year: (date >> 9) + 1980, month: (date >> 5) & 0xf, day: date & 0x1f };
-}
+describe("createZipWriter — classic path", () => {
+  it("round-trips through fflate unzipSync with entry order preserved", async () => {
+    const bytes = await writeArchive([
+      { name: "bags/a.bag", mtimeMs: Date.UTC(2026, 7, 20, 1, 2, 3), data: textBytes("bag-bytes") },
+      { name: "logs/robot.log", mtimeMs: Date.UTC(2026, 7, 20, 1, 2, 3), data: textBytes("log-line\n") },
+      { name: "manifest.json", mtimeMs: Date.UTC(2026, 7, 20, 1, 2, 3), data: textBytes("{}") },
+    ]);
+    const unzipped = unzipSync(bytes);
+    expect(Object.keys(unzipped)).toEqual(["bags/a.bag", "logs/robot.log", "manifest.json"]);
+    expect(Buffer.from(unzipped["bags/a.bag"]! as Uint8Array).toString()).toBe("bag-bytes");
+    expect(Buffer.from(unzipped["logs/robot.log"]! as Uint8Array).toString()).toBe("log-line\n");
+    expect(Buffer.from(unzipped["manifest.json"]! as Uint8Array).toString()).toBe("{}");
+  });
 
-describe("createZipWriter", () => {
-  it("round-trips stored entries in write order (fflate unzipSync)", async () => {
-    const writable = new MockWritable();
-    const writer = createZipWriter(writable.asStream());
+  it("writes a signed data descriptor after each entry (bit 3, spec §8.1)", async () => {
+    const data = textBytes("hello world");
+    const bytes = await writeArchive([
+      { name: "a.txt", mtimeMs: Date.UTC(2026, 7, 20), data },
+    ]);
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    expect(view.getUint16(6, true) & 0x0008).toBe(0x0008); // 本地头 bit 3
+    // 数据之后紧跟带签名 0x08074b50 的描述符(签名 4 + CRC 4 + 双 size 各 4)。
+    const descriptorOffset = 30 + "a.txt".length + data.byteLength;
+    expect(view.getUint32(descriptorOffset, true)).toBe(DESCRIPTOR_SIG);
+    expect(view.getUint32(descriptorOffset + 4, true)).toBe(0x0d4a1185); // "hello world" 的 CRC-32
+    expect(view.getUint32(descriptorOffset + 8, true)).toBe(data.byteLength);
+    expect(view.getUint32(descriptorOffset + 12, true)).toBe(data.byteLength);
+    expect(findSignature(bytes, DESCRIPTOR_SIG)).toHaveLength(1);
+    // 全部值装得下 → 只写经典 EOCD,不写 zip64 结构。
+    expect(findSignature(bytes, ZIP64_EOCD_SIG)).toHaveLength(0);
+    expect(findSignature(bytes, ZIP64_LOCATOR_SIG)).toHaveLength(0);
+    expect(findSignature(bytes, EOCD_SIG)).toHaveLength(1);
+  });
 
-    const first = new TextEncoder().encode("hello bag contents");
-    const secondA = new TextEncoder().encode("part one —");
-    const secondB = new TextEncoder().encode("part two");
+  it("sets the UTF-8 flag for non-ASCII entry names", async () => {
+    const bytes = await writeArchive([
+      { name: "logs/机器人.log", mtimeMs: Date.UTC(2026, 7, 20), data: textBytes("x") },
+    ]);
+    const localView = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    expect(localView.getUint16(6, true) & 0x0800).toBe(0x0800);
+    const centralOffset = 30 + localView.getUint16(26, true) + 1 + 16;
+    const centralView = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    expect(centralView.getUint16(centralOffset + 8, true) & 0x0800).toBe(0x0800);
+    expect(Buffer.from(unzipSync(bytes)["logs/机器人.log"]! as Uint8Array).toString()).toBe("x");
+  });
 
-    writer.beginEntry("a.bag", Date.parse("2026-08-06T13:14:16Z"));
-    await writer.pushEntryChunk(first);
-    await writer.endEntry();
-    writer.beginEntry("日志.txt", Date.parse("2026-01-02T03:04:06Z"));
-    await writer.pushEntryChunk(secondA);
-    await writer.pushEntryChunk(secondB);
-    await writer.endEntry();
+  it("clamps entry mtimes into the DOS range (1980-01-01 ~ 2099-12-31)", async () => {
+    const bytes = await writeArchive([
+      { name: "old.txt", mtimeMs: Date.UTC(1970, 0, 1), data: textBytes("x") },
+      { name: "new.txt", mtimeMs: Date.UTC(2200, 0, 1), data: textBytes("x") },
+    ]);
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    // 1970 → 钳到 1980-01-01 00:00:00;2200 → 钳到 2099-12-31 23:59:58。
+    expect(view.getUint16(10, true)).toBe(0); // DOS time 00:00:00
+    expect(view.getUint16(12, true)).toBe((1 << 5) | 1); // 1980-01-01
+    const unzipped = unzipSync(bytes);
+    expect(Object.keys(unzipped).sort()).toEqual(["new.txt", "old.txt"]);
+  });
+});
+
+describe("createZipWriter — zip64 paths (injected threshold, spec §8.2/§16)", () => {
+  // 把 32 位边界压到 KB 级:超过 4KiB 的值即"越界"。
+  const THRESHOLD = 4096;
+  const big = (size: number): Uint8Array => new Uint8Array(size).fill(0xab);
+
+  it("upgrades a single oversized entry: local sentinel + extra + 8-byte descriptor", async () => {
+    const data = big(5000);
+    const bytes = await writeArchive(
+      [{ name: "bags/big.bag", mtimeMs: Date.UTC(2026, 7, 20), data }],
+      { __testMaxFieldValue: THRESHOLD },
+    );
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    expect(view.getUint16(4, true)).toBe(45); // version needed(zip64 条目)
+    expect(view.getUint32(18, true)).toBe(0xffffffff); // 本地头哨兵
+    expect(view.getUint32(22, true)).toBe(0xffffffff);
+    // 本地头 extra:0x0001 + 16 字节双 size(Store 下两值相等)。
+    const extraOffset = 30 + "bags/big.bag".length;
+    expect(view.getUint16(extraOffset, true)).toBe(0x0001);
+    expect(view.getUint16(extraOffset + 2, true)).toBe(16);
+    expect(view.getUint32(extraOffset + 4, true)).toBe(5000);
+    expect(view.getUint32(extraOffset + 12, true)).toBe(5000);
+    // 8 字节 size 的数据描述符(总长 24)。
+    const descriptorOffset = extraOffset + 20 + data.byteLength;
+    expect(view.getUint32(descriptorOffset, true)).toBe(DESCRIPTOR_SIG);
+    expect(view.getUint32(descriptorOffset + 8, true)).toBe(5000);
+    expect(view.getUint32(descriptorOffset + 16, true)).toBe(5000);
+    // 中央目录同样带哨兵 + extra,并升级为 zip64 EOCD。
+    expect(findSignature(bytes, ZIP64_EOCD_SIG)).toHaveLength(1);
+    expect(findSignature(bytes, ZIP64_LOCATOR_SIG)).toHaveLength(1);
+    expect(findSignature(bytes, EOCD_SIG)).toHaveLength(1);
+  });
+
+  it("upgrades cumulative offsets: central sentinel + zip64 EOCD + locator", async () => {
+    // 第一个条目 5KB → 第二个条目的本地头偏移 > 阈值 → 中央目录偏移哨兵。
+    const bytes = await writeArchive(
+      [
+        { name: "a.bag", mtimeMs: Date.UTC(2026, 7, 20), data: big(5000) },
+        { name: "b.bag", mtimeMs: Date.UTC(2026, 7, 20), data: textBytes("b") },
+      ],
+      { __testMaxFieldValue: THRESHOLD },
+    );
+    const archive = await openZipArchive(new BlobRandomAccessReader(new Blob([bytes])));
+    const entry = archive.entries.find((candidate) => candidate.name === "b.bag");
+    expect(entry).toBeDefined();
+    expect(entry!.size).toBe(1);
+    expect(entry!.dataOffset).toBeGreaterThan(THRESHOLD);
+    expect(archive.entries.map((candidate) => candidate.name)).toEqual(["a.bag", "b.bag"]);
+  });
+
+  it("upgrades the entry count when it overflows the threshold", async () => {
+    const bytes = await writeArchive(
+      [1, 2, 3].map((i) => ({
+        name: `f${i}.txt`,
+        mtimeMs: Date.UTC(2026, 7, 20),
+        data: textBytes(`x${i}`),
+      })),
+      { __testMaxFieldValue: 2 },
+    );
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    expect(findSignature(bytes, ZIP64_EOCD_SIG)).toHaveLength(1);
+    expect(findSignature(bytes, ZIP64_LOCATOR_SIG)).toHaveLength(1);
+    const eocdOffset = bytes.byteLength - 22;
+    expect(view.getUint16(eocdOffset + 8, true)).toBe(0xffff); // 计数哨兵
+    expect(view.getUint16(eocdOffset + 10, true)).toBe(0xffff);
+    const archive = await openZipArchive(new BlobRandomAccessReader(new Blob([bytes])));
+    expect(archive.entries).toHaveLength(3);
+  });
+
+  it("reads zip64 archives back through the §11.1 reader (round-trip)", async () => {
+    const bytes = await writeArchive(
+      [
+        { name: "bags/one.bag", mtimeMs: Date.UTC(2026, 7, 20), data: big(5000) },
+        { name: "bags/two.bag", mtimeMs: Date.UTC(2026, 7, 20), data: big(6000) },
+        { name: "manifest.json", mtimeMs: Date.UTC(2026, 7, 20), data: textBytes("{\"format\":1}") },
+      ],
+      { __testMaxFieldValue: THRESHOLD },
+    );
+    const archive = await openZipArchive(new BlobRandomAccessReader(new Blob([bytes])));
+    const manifest = archive.entries.find((entry) => entry.name === "manifest.json");
+    expect(manifest).toBeDefined();
+    expect(await archive.readEntryText(manifest!)).toBe("{\"format\":1}");
+    const one = archive.entries.find((entry) => entry.name === "bags/one.bag")!;
+    const reader = archive.openEntryReader(one);
+    expect(reader.size).toBe(5000);
+    const head = await reader.read(0, 8);
+    expect(head).toEqual(bytes.subarray(one.dataOffset, one.dataOffset + 8));
+    const tail = await reader.read(4992, 8);
+    expect(tail).toEqual(bytes.subarray(one.dataOffset + 4992, one.dataOffset + 5000));
+  });
+});
+
+describe("createZipWriter — descriptor tolerates size changes (spec §8.1)", () => {
+  it("writes actualSize from endEntry when it differs from the announced size", async () => {
+    const writable = new MemoryWritable();
+    const writer = createZipWriter(writable);
+    const data = textBytes("0123456789");
+    writer.beginEntry("a.bag", Date.UTC(2026, 7, 20), 4096);
+    await writer.pushEntryChunk(data);
+    await writer.endEntry(data.byteLength); // fileEnd 报了不同的字节数
     await writer.finalize();
-
-    expect(writable.closed).toBe(true);
-    const unzipped = unzipSync(writable.bytes());
-    expect(Object.keys(unzipped)).toEqual(["a.bag", "日志.txt"]);
-    expect(unzipped["a.bag"]).toEqual(first);
-    const merged = new Uint8Array(secondA.byteLength + secondB.byteLength);
-    merged.set(secondA, 0);
-    merged.set(secondB, secondA.byteLength);
-    expect(unzipped["日志.txt"]).toEqual(merged);
-  });
-
-  it("sets the UTF-8 flag only for non-ASCII entry names", async () => {
-    const writable = new MockWritable();
-    const writer = createZipWriter(writable.asStream());
-    writer.beginEntry("ascii.bag", Date.parse("2026-08-06T00:00:00Z"));
-    await writer.endEntry();
-    writer.beginEntry("中文名.log", Date.parse("2026-08-06T00:00:00Z"));
-    await writer.endEntry();
-    await writer.finalize();
-
     const bytes = writable.bytes();
-    const offsets = localHeaderOffsets(bytes);
-    expect(offsets.length).toBe(2);
-    const view = new DataView(bytes.buffer, bytes.byteOffset);
-    const UTF8_FLAG = 0x0800;
-    expect(view.getUint16(offsets[0]! + 6, true) & UTF8_FLAG).toBe(0);
-    expect(view.getUint16(offsets[1]! + 6, true) & UTF8_FLAG).toBe(UTF8_FLAG);
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const descriptorOffset = 30 + "a.bag".length + data.byteLength;
+    expect(view.getUint32(descriptorOffset + 8, true)).toBe(data.byteLength);
+    // 中央目录以 actualSize 落盘,fflate 按此读回完整条目。
+    expect(Buffer.from(unzipSync(bytes)["a.bag"]! as Uint8Array).toString()).toBe("0123456789");
   });
+});
 
-  it("preserves the entry mtime (DOS encoding, local time)", async () => {
-    const writable = new MockWritable();
-    const writer = createZipWriter(writable.asStream());
-    // Local-time construction matches fflate's local-time DOS encoding.
-    writer.beginEntry("a.bag", new Date(2026, 7, 6, 13, 14, 16).getTime());
-    await writer.endEntry();
-    await writer.finalize();
-
-    const bytes = writable.bytes();
-    const offsets = localHeaderOffsets(bytes);
-    expect(localHeaderDosDate(bytes, offsets[0]!)).toEqual({ year: 2026, month: 8, day: 6 });
-    const view = new DataView(bytes.buffer, bytes.byteOffset);
-    const time = view.getUint16(offsets[0]! + 10, true);
-    expect({ hours: time >> 11, minutes: (time >> 5) & 0x3f, seconds: (time & 0x1f) * 2 }).toEqual({
-      hours: 13,
-      minutes: 14,
-      seconds: 16,
-    });
-  });
-
-  it("clamps out-of-range entry mtimes to the DOS date bounds", async () => {
-    const writable = new MockWritable();
-    const writer = createZipWriter(writable.asStream());
-    writer.beginEntry("epoch0.bag", 0); // 1970 → clamped to 1980-01-01
-    await writer.endEntry();
-    writer.beginEntry("future.bag", new Date(3000, 0, 1).getTime()); // → 2099-12-31
-    await writer.endEntry();
-    await writer.finalize();
-
-    const bytes = writable.bytes();
-    const offsets = localHeaderOffsets(bytes);
-    expect(offsets.length).toBe(2);
-    expect(localHeaderDosDate(bytes, offsets[0]!)).toEqual({ year: 1980, month: 1, day: 1 });
-    expect(localHeaderDosDate(bytes, offsets[1]!)).toEqual({ year: 2099, month: 12, day: 31 });
-    // The result stays a valid zip.
-    expect(Object.keys(unzipSync(bytes))).toEqual(["epoch0.bag", "future.bag"]);
-  });
-
-  it("serializes writes: pushEntryChunk resolves only after its bytes hit the writable", async () => {
-    const writable = new MockWritable();
-    writable.gateWrites();
-    const writer = createZipWriter(writable.asStream());
-    writer.beginEntry("a.bag", Date.parse("2026-08-06T00:00:00Z"));
-
-    let pushed = false;
-    const pushPromise = writer.pushEntryChunk(new Uint8Array([1, 2, 3])).then(() => {
-      pushed = true;
-    });
-    await Promise.resolve();
-    expect(pushed).toBe(false);
-    expect(writable.chunks.length).toBe(0);
-
-    writable.release();
-    await pushPromise;
-    expect(pushed).toBe(true);
-    // Local header + data were written in order once the gate opened.
-    expect(writable.chunks.length).toBeGreaterThan(0);
-    const bytes = writable.bytes();
-    const offsets = localHeaderOffsets(bytes);
-    expect(offsets.length).toBe(1);
-  });
-
-  it("abort() discards the package: no central directory, writable aborted, cleanup called", async () => {
-    const writable = new MockWritable();
-    const onAbort = jest.fn(async () => {});
-    const writer = createZipWriter(writable.asStream(), { onAbort });
-
-    writer.beginEntry("a.bag", Date.parse("2026-08-06T00:00:00Z"));
-    await writer.pushEntryChunk(new Uint8Array([1, 2, 3]));
-    await writer.abort();
-
-    expect(writable.aborted).toBe(true);
-    expect(writable.closed).toBe(false);
-    expect(onAbort).toHaveBeenCalledTimes(1);
-    expect(hasEndOfCentralDirectory(writable.bytes())).toBe(false);
-
-    // Entry methods are no-ops after abort — late frames are dropped silently.
-    const chunksBefore = writable.chunks.length;
-    writer.beginEntry("late.bag", 0);
-    await writer.pushEntryChunk(new Uint8Array([9, 9]));
-    await writer.endEntry();
-    expect(writable.chunks.length).toBe(chunksBefore);
-  });
-
-  it("abort() tolerates a NotFoundError from the partial-zip cleanup", async () => {
-    const writable = new MockWritable();
-    const writer = createZipWriter(writable.asStream(), {
+describe("createZipWriter — abort", () => {
+  it("never writes a central directory, no-ops later calls, and removes the partial zip", async () => {
+    const writable = new MemoryWritable();
+    let removed = false;
+    const writer = createZipWriter(writable, {
       onAbort: async () => {
-        throw new DOMException("not found", "NotFoundError");
+        removed = true;
       },
     });
-    writer.beginEntry("a.bag", Date.parse("2026-08-06T00:00:00Z"));
-    await writer.pushEntryChunk(new Uint8Array([1]));
-    await expect(writer.abort()).resolves.toBeUndefined();
-    expect(writable.aborted).toBe(true);
-  });
-
-  it("aborts the package when container bytes exceed the (injected) size limit", async () => {
-    const writable = new MockWritable();
-    const writer = createZipWriter(writable.asStream(), { maxBytes: 40 });
-
-    writer.beginEntry("a.bag", Date.parse("2026-08-06T00:00:00Z"));
-    // The 35-byte local header fits; the next chunk pushes the container over 40 bytes.
-    await writer.pushEntryChunk(new Uint8Array(2));
-    await expect(writer.pushEntryChunk(new Uint8Array(16))).rejects.toBeInstanceOf(
-      ZipSizeLimitExceededError,
-    );
-
+    writer.beginEntry("a.bag", Date.UTC(2026, 7, 20));
+    await writer.pushEntryChunk(textBytes("partial"));
     await writer.abort();
+    // abort 后 push/begin/end 均 no-op,finalize 拒绝。
+    writer.beginEntry("b.bag", Date.UTC(2026, 7, 20));
+    await writer.pushEntryChunk(textBytes("late"));
+    await writer.endEntry(4);
+    await expect(writer.finalize()).rejects.toThrow();
+    const bytes = writable.bytes();
+    expect(findSignature(bytes, EOCD_SIG)).toHaveLength(0);
+    expect(findSignature(bytes, 0x02014b50)).toHaveLength(0); // 无中央目录头
     expect(writable.aborted).toBe(true);
-    expect(hasEndOfCentralDirectory(writable.bytes())).toBe(false);
+    expect(removed).toBe(true);
   });
 
-  it("finalize() refuses to land a package whose central directory crosses the limit", async () => {
-    const writable = new MockWritable();
-    // Entry "a" (30 + 1 name bytes header + 16 descriptor + 4 data = 51) fits under 60,
-    // but the central directory (~47 + 22 EOCD) does not.
-    const writer = createZipWriter(writable.asStream(), { maxBytes: 60 });
-    writer.beginEntry("a", Date.parse("2026-08-06T00:00:00Z"));
-    await writer.pushEntryChunk(new Uint8Array(4));
-    await writer.endEntry();
-    await expect(writer.finalize()).rejects.toBeInstanceOf(ZipSizeLimitExceededError);
-    expect(writable.closed).toBe(false);
+  it("surfaces local write failures at the next await point", async () => {
+    const writable = new MemoryWritable();
+    const writer = createZipWriter(writable);
+    writer.beginEntry("a.bag", Date.UTC(2026, 7, 20));
+    writable.failWrites = true;
+    await expect(writer.pushEntryChunk(textBytes("x"))).rejects.toThrow("disk full");
     await writer.abort();
-    expect(writable.aborted).toBe(true);
-  });
-
-  it("supports 0-byte entries", async () => {
-    const writable = new MockWritable();
-    const writer = createZipWriter(writable.asStream());
-    writer.beginEntry("empty.bag", Date.parse("2026-08-06T00:00:00Z"));
-    await writer.endEntry();
-    await writer.finalize();
-    const unzipped = unzipSync(writable.bytes());
-    expect(Object.keys(unzipped)).toEqual(["empty.bag"]);
-    expect(unzipped["empty.bag"]?.byteLength).toBe(0);
   });
 });
 
-describe("zipFileName", () => {
-  it("formats export-YYYYMMDD-HHmmss.zip in local time", () => {
-    expect(zipFileName(new Date(2026, 7, 6, 13, 14, 15))).toBe("export-20260806-131415.zip");
-    expect(zipFileName(new Date(2026, 0, 2, 3, 4, 5))).toBe("export-20260102-030405.zip");
-  });
-});
-
-describe("resolveZipNameConflict", () => {
-  const existsWith = (existing: ReadonlySet<string>) => async (name: string) => existing.has(name);
-
-  it("keeps the base name when there is no conflict", async () => {
-    await expect(resolveZipNameConflict("export-a.zip", existsWith(new Set()))).resolves.toBe(
-      "export-a.zip",
+describe("robotExportZipFileName (spec §7.1)", () => {
+  it("derives the name from naive start/end keys", () => {
+    expect(robotExportZipFileName("20260820090000", "20260820100000")).toBe(
+      "robot-export-20260820-090000-20260820-100000.zip",
     );
   });
-
-  it("appends an incrementing suffix until the name is free", async () => {
-    await expect(
-      resolveZipNameConflict("export-a.zip", existsWith(new Set(["export-a.zip"]))),
-    ).resolves.toBe("export-a (1).zip");
-    await expect(
-      resolveZipNameConflict(
-        "export-a.zip",
-        existsWith(new Set(["export-a.zip", "export-a (1).zip", "export-a (2).zip"])),
-      ),
-    ).resolves.toBe("export-a (3).zip");
-  });
 });
 
-describe("zipSelectionTooLarge", () => {
-  it("rejects selections at or above the limit", () => {
-    expect(zipSelectionTooLarge(MAX_ZIP_BYTES - 1)).toBe(false);
-    expect(zipSelectionTooLarge(MAX_ZIP_BYTES)).toBe(true);
-    expect(zipSelectionTooLarge(MAX_ZIP_BYTES + 1)).toBe(true);
-    expect(zipSelectionTooLarge(10, 10)).toBe(true);
-  });
-});
-
-describe("parentDir", () => {
-  it("returns the parent of a canonical path", () => {
-    expect(parentDir("/data/bags/a.bag")).toBe("/data/bags");
-    expect(parentDir("/a.bag")).toBe("/");
-    expect(parentDir("/")).toBe("/");
-  });
-});
-
-describe("commonAncestorDir (SPEC_server_file_browser.md §5.1)", () => {
-  it("is the directory itself when all selections share one parent", () => {
-    expect(commonAncestorDir(["/data/bags", "/data/bags"])).toBe("/data/bags");
-    expect(commonAncestorDir(["/"])).toBe("/");
+describe("resolveZipNameConflict (spec §7.1)", () => {
+  it("appends (n) until the name is free", async () => {
+    const existing = new Set(["a.zip", "a (1).zip"]);
+    const name = await resolveZipNameConflict("a.zip", async (candidate) => existing.has(candidate));
+    expect(name).toBe("a (2).zip");
   });
 
-  it("is the longest common segment prefix across directories", () => {
-    expect(commonAncestorDir(["/data/bags", "/data/logs"])).toBe("/data");
-    expect(commonAncestorDir(["/data/bags/2026", "/data/bags", "/data/bags/2025"])).toBe(
-      "/data/bags",
-    );
-  });
-
-  it("compares by segments, not string prefixes: /a/b and /a/bc share only /a", () => {
-    expect(commonAncestorDir(["/a/b", "/a/bc"])).toBe("/a");
-  });
-
-  it("degrades to / when the directories share no segment", () => {
-    expect(commonAncestorDir(["/home/u", "/var/log"])).toBe("/");
-    expect(commonAncestorDir([])).toBe("/");
-  });
-});
-
-describe("zipEntryName (SPEC_server_file_browser.md §5.1)", () => {
-  it("degrades to the bare name when the ancestor is the parent directory", () => {
-    expect(zipEntryName("/data/bags/a.bag", "/data/bags")).toBe("a.bag");
-  });
-
-  it("produces relative paths for cross-directory selections", () => {
-    expect(zipEntryName("/data/bags/2026/a.bag", "/data")).toBe("bags/2026/a.bag");
-    expect(zipEntryName("/data/logs/run.log", "/data")).toBe("logs/run.log");
-  });
-
-  it("strips only the leading slash when the ancestor is /", () => {
-    expect(zipEntryName("/home/u/a.bag", "/")).toBe("home/u/a.bag");
-  });
-
-  it("never collides within one selection set (relative paths are unique)", () => {
-    const paths = ["/data/bags/a.bag", "/data/logs/a.bag", "/data/bags/b.bag"];
-    const ancestor = commonAncestorDir(paths.map(parentDir));
-    const names = paths.map((path) => zipEntryName(path, ancestor));
-    expect(new Set(names).size).toBe(names.length);
-    expect(names).toEqual(["bags/a.bag", "logs/a.bag", "bags/b.bag"]);
-  });
-});
-
-describe("createZipWriter with relative-path entry names", () => {
-  it("round-trips entries whose names contain slashes (fflate unzipSync)", async () => {
-    const writable = new MockWritable();
-    const writer = createZipWriter(writable.asStream());
-
-    const first = new TextEncoder().encode("bag bytes");
-    const second = new TextEncoder().encode("log bytes");
-
-    writer.beginEntry("bags/2026/a.bag", Date.parse("2026-08-06T13:14:16Z"));
-    await writer.pushEntryChunk(first);
-    await writer.endEntry();
-    writer.beginEntry("logs/run.log", Date.parse("2026-01-02T03:04:06Z"));
-    await writer.pushEntryChunk(second);
-    await writer.endEntry();
-    await writer.finalize();
-
-    expect(writable.closed).toBe(true);
-    const unzipped = unzipSync(writable.bytes());
-    expect(Object.keys(unzipped)).toEqual(["bags/2026/a.bag", "logs/run.log"]);
-    expect(unzipped["bags/2026/a.bag"]).toEqual(first);
-    expect(unzipped["logs/run.log"]).toEqual(second);
+  it("keeps the base name when free", async () => {
+    expect(await resolveZipNameConflict("a.zip", async () => false)).toBe("a.zip");
   });
 });

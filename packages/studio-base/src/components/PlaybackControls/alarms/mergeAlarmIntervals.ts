@@ -2,6 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
+import { translateAlarmCodes, translateAlarmHints } from "./alarmDictionary";
 import { AlarmInterval, AlarmSample, RobotStatusRecord } from "./robotAlarmTypes";
 
 /**
@@ -113,7 +114,13 @@ export function mergeAlarmIntervals(
   for (const record of validSamples) {
     const alarmCodes = parseAlarmCodes(record.alarm_message);
     if (alarmCodes.length > 0) {
-      const sample: AlarmSample = { ...record, alarmCodes, localTime: formatLocalTime(record.time) };
+      const sample: AlarmSample = {
+        ...record,
+        alarmCodes,
+        alarm_text: translateAlarmCodes(alarmCodes),
+        alarm_hint: translateAlarmHints(alarmCodes),
+        localTime: formatLocalTime(record.time),
+      };
       if (!active) {
         // 无活动区间:以当前告警采样开启新区间
         active = { startMs: record.time, endMs: record.time, samples: [sample] };

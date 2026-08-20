@@ -4,6 +4,8 @@
 > 日期:2026-08-06
 > 前置文档:[SPEC_server_bag_export.md](SPEC_server_bag_export.md)(原规格)、[SPEC_server_file_export_zip.md](SPEC_server_file_export_zip.md)(下称"v2 规格")。本文档是在 v2 已实施基础上的**扩展与修订**,冲突处以本文档为准;未提及的章节(连接流程、凭据存储、ack 流控、取消定序、zip 整包作废语义、4GB 双层防护等)全部沿用 v2 规格与原规格。
 
+> **取代注记(2026-08-20)**:本文档的**浏览 UI**(面包屑/前进后退/子目录导航/跨目录多选)已被 [SPEC_robot_export_package.md](SPEC_robot_export_package.md) 取代并移除;本文档定义的 **v3 协议产物**(`dir` 条目、realpath canonical path、statFollow 语义、visited-dirs 校验)保留并服务于该文档的日志递归遍历(其 §4.3)。冲突处以该文档为准。
+
 > **修订记录(2026-08-06 规格评审后修订)**
 > - §7.2:重试重列由"任一失败回连接表单"改为**按目录降级**(失败目录的重试项计失败组、不进入本次导出;仅静默重连本身失败才回连接表单);`entryName` 于导出启动时固化、重试不重算
 > - §6.2:导航 loading 不再全禁用控件——`navigationSeq` 为竞态唯一仲裁,[断开并返回] 恒可用(桥接无 SFTP 请求级超时,全禁用最长可困住用户 10 分钟);摘要条口径消歧:"过滤/隐藏外"限定**当前目录内**、与"跨 D 个目录"括注不重复计数,变量符号分立(N/D/F);空态三档补判定优先级

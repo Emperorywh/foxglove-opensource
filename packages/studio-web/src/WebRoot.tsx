@@ -12,6 +12,7 @@ import {
   Ros2LocalBagDataSourceFactory,
   RosbridgeDataSourceFactory,
   RemoteDataSourceFactory,
+  RobotExportPackageDataSourceFactory,
   FoxgloveWebSocketDataSourceFactory,
   UlogLocalDataSourceFactory,
   McapLocalDataSourceFactory,
@@ -49,6 +50,8 @@ export function WebRoot(props: {
       new SampleNuscenesDataSourceFactory(),
       new McapLocalDataSourceFactory(),
       new RemoteDataSourceFactory(),
+      // 机器人导出包(SPEC_robot_export_package.md §11.4):zip 直接导入播放。
+      new RobotExportPackageDataSourceFactory(),
     ];
 
     return props.dataSources ?? sources;

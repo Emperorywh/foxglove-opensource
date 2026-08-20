@@ -52,6 +52,12 @@ export interface SshSession {
    * never "symlink" (a symlink loop resolves to a stat failure).
    */
   statFollow(path: string): Promise<{ size: number; mtimeMs: number; entryType: SshEntryType }>;
+  /**
+   * 机器人当前 Unix 时间(毫秒)与时区偏移(分钟,本地超前 UTC;UTC+8 → +480)。
+   * 桥接以固定 `date '+%s %z'` 命令读取(SPEC_robot_export_package.md §4.2)——
+   * 协议不暴露任何任意命令执行面。失败抛 SshError。
+   */
+  getServerTime(): Promise<{ unixMs: number; tzOffsetMinutes: number }>;
   /** Read stream for a file. Stream errors are SshErrors where mappable. */
   openReadStream(path: string): Readable;
   /** Close the session. Subsequent onClose callbacks still fire but are ignored by the bridge. */

@@ -18,6 +18,15 @@ export enum AppSetting {
   ROBOT_ALARM_HOST = "robotAlarm.host",
   ROBOT_ALARM_PORT = "robotAlarm.port",
 
+  // 机器人数据导出包(SPEC_robot_export_package.md §9.1):连接成功时写回(决策 #10);
+  // 密码一并记住(应用户要求,含明文/密文切换);包含日志不持久化——每次默认勾选;
+  // port 与告警服务的 host/port 双向联动(§3)
+  ROBOT_EXPORT_SSH_PORT = "robotExport.sshPort",
+  ROBOT_EXPORT_USERNAME = "robotExport.username",
+  ROBOT_EXPORT_PASSWORD = "robotExport.password",
+  ROBOT_EXPORT_BAG_PATH = "robotExport.bagPath",
+  ROBOT_EXPORT_LOG_PATH = "robotExport.logPath",
+
   // Experimental features
   SHOW_DEBUG_PANELS = "showDebugPanels",
 

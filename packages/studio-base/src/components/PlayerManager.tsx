@@ -96,6 +96,13 @@ export default function PlayerManager(props: PropsWithChildren<PlayerManagerProp
   const { enqueueSnackbar } = useSnackbar();
 
   const [selectedSource, setSelectedSource] = useState<IDataSourceFactory | undefined>();
+  // §11.5(决策 #31):成功构建 player 时按形态写入其一,切换/关闭时清空——
+  // 播放层与告警泳道 UI 之间的最小侵入通道。
+  const [selectedFiles, setSelectedFiles] = useState<File[] | undefined>();
+  const [selectedParams, setSelectedParams] = useState<Record<
+    string,
+    string | undefined
+  > | undefined>();
 
   const selectSource = useCallback(
     async (sourceId: string, args?: DataSourceArgs) => {
@@ -111,6 +118,9 @@ export default function PlayerManager(props: PropsWithChildren<PlayerManagerProp
 
       metricsCollector.setProperty("player", sourceId);
 
+      // 切换数据源即清空上一选择的取数通道(§11.5)。
+      setSelectedFiles(undefined);
+      setSelectedParams(undefined);
       setSelectedSource(foundSource);
 
       // Sample sources don't need args or prompts to initialize
@@ -137,8 +147,13 @@ export default function PlayerManager(props: PropsWithChildren<PlayerManagerProp
               params: args.params,
             });
             setBasePlayer(newPlayer);
+            if (args.params != undefined) {
+              setSelectedParams(args.params);
+            }
 
-            if (args.params?.url) {
+            // 导出包的桌面闭环 URL 含会话 token,重启后必失效,不写"最近数据源"
+            // (§11.5;按 sourceId 跳过)。
+            if (args.params?.url && foundSource.id !== "robot-export-package") {
               addRecent({
                 type: "connection",
                 sourceId: foundSource.id,
@@ -174,6 +189,7 @@ export default function PlayerManager(props: PropsWithChildren<PlayerManagerProp
               });
 
               setBasePlayer(newPlayer);
+              setSelectedFiles(fileList);
               return;
             } else if (handle) {
               const permission = await handle.queryPermission({ mode: "read" });
@@ -199,6 +215,7 @@ export default function PlayerManager(props: PropsWithChildren<PlayerManagerProp
               });
 
               setBasePlayer(newPlayer);
+              setSelectedFiles([file]);
               addRecent({
                 type: "file",
                 title: handle.name,
@@ -238,6 +255,8 @@ export default function PlayerManager(props: PropsWithChildren<PlayerManagerProp
     selectSource,
     selectRecent,
     selectedSource,
+    selectedFiles,
+    selectedParams,
     availableSources: playerSources,
     recentSources,
   };

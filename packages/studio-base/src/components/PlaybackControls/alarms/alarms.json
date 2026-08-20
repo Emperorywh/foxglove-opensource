@@ -1,0 +1,3873 @@
+{
+    "code": 200,
+    "message": "success",
+    "timestamp": 1787210061314,
+    "data": {
+        "records": [
+            {
+                "id": 193,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "100000",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Vehicle action execution error",
+                        "hint": "Please contact vehicle personnel for troubleshooting"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "车辆执行动作异常",
+                        "hint": "请联系车体人员排查"
+                    }
+                ]
+            },
+            {
+                "id": 192,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "4217",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Scanned code does not match expectation",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "扫码与预期不符",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 191,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "4216",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Cargo still detected after forklift unloading completed",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "叉车放货完成后检测到仍然有货",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 190,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "4215",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Failed to get fork height",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "获取叉尺高度失败",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 189,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "4214",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Warehouse area recognition failed",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "库区识别失败",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 188,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "4213",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Unsupported action",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "不支持的动作",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 187,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "4212",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Charging timeout",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "充电超时",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 186,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "4211",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Current position and dispatched position exceed maximum error",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "当前点位与下发点位超过最大误差值",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 185,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "4210",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Failed to get current vehicle pose",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "获取当前车辆位姿失败",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 184,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "4209",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Cargo-in-place not triggered",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "货物到位未触发",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 183,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "4208",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Fork height inconsistent with expected height",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "叉尺高度与预期高度不一致",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 182,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "4207",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Failed to dispatch onboard order action",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "车载订单动作下发失败",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 181,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "4206",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Order action parameter error (missing, type error, range error, etc.)",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "订单动作参数错误(缺少、类型错误、范围错误等)",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 180,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "4205",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "[Error during order execution] Error during order execution",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "[订单执行过程中出错] 订单执行过程中出错",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 179,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "4204",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "[Order validation failed] Received order with charging action while already charging",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "[订单校验失败] 充电状态下再收到含有充电动作订单",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 178,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "4203",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "[Order validation failed] Vehicle rejected order in manual mode",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "[订单校验失败] 车载位于手动模式下拒绝订单",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 177,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "4202",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "[Order validation failed] Order message is not JSON structure",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "[订单校验失败] 订单消息非JSON结构",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 176,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "4201",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "[Order validation failed] Update task validation failed, task error",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "[订单校验失败] 更新任务校验失败，任务错误",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 175,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "4200",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "[Order validation failed] No path error, the first node received by AGV is unreachable",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "[订单校验失败] 无路径错误，AGV 收到的第一个节点不可达",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 174,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "1003",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "No code was scanned beyond a certain distance",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "超过一定距离未扫描到码",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 173,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "1002",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Rotation is decoded",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "旋转已脱码",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 172,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "1001",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The QR code is damaged",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "二维码存在污损",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 171,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "1000",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "QR code information not scanned",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "未扫描到二维码信息",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 170,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "999",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The program is abnormal, please confirm whether the positioning is normal.",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "程序异常，请确认定位是否正常",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 169,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "998",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Positioning anomaly",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "定位异常",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 168,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "997",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Process exception",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "进程异常",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 167,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "996",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "car body slipping",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "车体打滑",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 166,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "902",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Basic car lift failure",
+                        "hint": "Operators please check the status of the base vehicle"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "基础车举升故障",
+                        "hint": "操作人员请检查基础车状态"
+                    }
+                ]
+            },
+            {
+                "id": 165,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "901",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Basic vehicle steering failure",
+                        "hint": "Operators please check the status of the base vehicle"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "基础车转向故障",
+                        "hint": "操作人员请检查基础车状态"
+                    }
+                ]
+            },
+            {
+                "id": 164,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "900",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Basic vehicle driving failure",
+                        "hint": "Operators please check the status of the base vehicle"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "基础车行驶故障",
+                        "hint": "操作人员请检查基础车状态"
+                    }
+                ]
+            },
+            {
+                "id": 163,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "623",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The vehicle is too close to the obstacle",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "车辆距离障碍物过近",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 162,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "622",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The end of the obstacle course is too close to the end of the task, and the accuracy of reaching the end cannot be guaranteed.",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "绕障终点距离任务终点太近，无法保证到达终点精度",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 161,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "621",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Vehicle deviates from obstacle course",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "车辆偏离绕障路径",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 160,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "620",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Unable to obtain vehicle position during obstacle avoidance",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "绕障过程无法获取车辆位置",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 159,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "619",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The navigation task is over and the obstacle avoidance is terminated.",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "导航任务结束，绕障终止",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 158,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "618",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The obstacle avoidance mission was interrupted",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "绕障任务被打断",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 157,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "617",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The detour path is too far from the main path",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "绕障路径距主路径过远",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 156,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "616",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The planned path around obstacles is empty",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "绕障规划路径为空",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 155,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "615",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Unable to plan a path around obstacles",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "无法规划绕障路径",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 154,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "614",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The end of the obstacle course is not enabled",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "绕障终点未开启",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 153,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "613",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "No obstacles detected",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "未检测到障碍物",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 152,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "612",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "This task is not configured with obstacle avoidance",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "该任务未配置绕障",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 151,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "611",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The navigation task has ended or has not started and the obstacle cannot be circumvented.",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "导航任务已结束或未开始无法绕障",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 150,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "506",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Laser sensor list is empty, please check the model configuration.",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "激光传感器列表为空，请检查模型配置。",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 149,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "505",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Chassis alarm",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "底盘告警",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 148,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "504",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "IO obstacle avoidance triggers parking",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "IO避障触发停车",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 147,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "503",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "DI area triggers parking",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "DI区域触发停车",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 146,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "502",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The forbidden line triggers parking. Please leave the forbidden line manually.",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "禁止线触发停车，请手动离开禁止线",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 145,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "501",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Offline traffic control",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "离线交管",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 144,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "487",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Action execution timeout",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "动作执行超时",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 143,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "486",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "This vehicle model does not support the corresponding action",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "该车型不支持对应的动作",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 142,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "485",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Fork height exceeds limit",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "叉尺高度超过限制值",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 141,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "484",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Vehicle body rotation failed",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "车体旋转失败",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 140,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "483",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Fork height not in position",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "叉尺升降未到位",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 139,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "482",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Cargo safety detection failed when unloading",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "放货时货物安全检测失败",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 138,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "481",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Failed to disable shelf deduction",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "关闭货架扣除失败",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 137,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "480",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Failed to enable shelf deduction",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "开启货架扣除失败",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 136,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "479",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Lifting failed",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "顶升失败",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 135,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "478",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Failed to exit to shelf recognition point",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "退出到货架识别点失败",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 134,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "477",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Shelf recognition failed",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "货架识别失败",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 133,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "476",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Tray rotation failed",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "托盘旋转失败",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 132,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "475",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Charging status detection failed",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "充电状态检测失败",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 131,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "474",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Failed to open relay",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "打开继电器失败",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 130,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "473",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Path navigation failed",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "路径导航失败",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 129,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "472",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Goods dropped, mission failed",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "货物掉落，任务失败",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 128,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "471",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The goods arrived was not triggered and the task failed.",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "货物到位未触发，任务失败",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 127,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "450",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Speeding",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "已超速",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 126,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "436",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The current driving speed limit and obstacle avoidance area configuration do not match, please check the path configuration",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "当前行驶限速和避障区域配置不匹配，请检查路径配置",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 125,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "435",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The current path setting speed limit and obstacle avoidance area do not match, please check and save again.",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "当前路径设置限速和避障区域不匹配，请检查后重新保存",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 124,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "434",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Barcode verification failed",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "条形码验证失败",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 123,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "433",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The distance of forklift fork lowering in advance is not configured.",
+                        "hint": "Operators please check the configuration"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "堆高车提前降叉尺距离未配置",
+                        "hint": "操作人员请检查配置"
+                    }
+                ]
+            },
+            {
+                "id": 122,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "432",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Vehicle path verification error",
+                        "hint": "Operators please check the configuration"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "车载路径校验错误",
+                        "hint": "操作人员请检查配置"
+                    }
+                ]
+            },
+            {
+                "id": 121,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "431",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The stacker truck path is wrong. Check the deployment path and configuration.",
+                        "hint": "Operators please check the configuration."
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "堆高车路径出错,检查部署路径和配置",
+                        "hint": "操作人员请检查配,置"
+                    }
+                ]
+            },
+            {
+                "id": 120,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "430",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "No shelf space was found for stocking in the warehouse area.",
+                        "hint": "Operators please check the parameter configuration of the library area."
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "库区放货未找到配置货架空间",
+                        "hint": "操作人员请检查库区参数配置"
+                    }
+                ]
+            },
+            {
+                "id": 119,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "429",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The car body is slipping, please reset",
+                        "hint": "Operators please check the status of the vehicle body"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "车体打滑,请复位",
+                        "hint": "操作人员请检查车体状态"
+                    }
+                ]
+            },
+            {
+                "id": 118,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "428",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Please check whether the warehouse area identification laser is turned on",
+                        "hint": "Operators please check the vehicle body parameter configuration"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "请检查库区识别激光是否打开",
+                        "hint": "操作人员请检查车体参数配置"
+                    }
+                ]
+            },
+            {
+                "id": 117,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "427",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Library area generation path failed",
+                        "hint": "Operators please check the library path configuration"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "库区生成路径失败",
+                        "hint": "操作人员请检查库区路径配置"
+                    }
+                ]
+            },
+            {
+                "id": 116,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "426",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Please turn on laser identification when picking up and placing goods in the warehouse area",
+                        "hint": "Operators please check the status of the vehicle body sensors"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "库区取放货请打开激光识别",
+                        "hint": "操作人员请检查车体传感器状态"
+                    }
+                ]
+            },
+            {
+                "id": 115,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "425",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The data issued to the library area is empty",
+                        "hint": "Operators please check the library path configuration"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "下发库区数据为空",
+                        "hint": "操作人员请检查库区路径配置"
+                    }
+                ]
+            },
+            {
+                "id": 114,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "424",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The rear camera and fork sensor are not turned on when picking up and placing in the warehouse area.",
+                        "hint": "Operators please check the status of the vehicle body sensors"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "库区取放未开启后摄像头和叉尺传感器",
+                        "hint": "操作人员请检查车体传感器状态"
+                    }
+                ]
+            },
+            {
+                "id": 113,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "423",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Third-party connection failed",
+                        "hint": "Operators please check the communication setting status"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "第三方对接失败",
+                        "hint": "操作人员请检查通信设置状态"
+                    }
+                ]
+            },
+            {
+                "id": 112,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "422",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The fork tines cannot be inserted into the tray and the size does not match",
+                        "hint": "Operators please check the status of goods in the warehouse area"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "叉齿无法插入托盘,尺寸不符",
+                        "hint": "操作人员请检查库区货物状态"
+                    }
+                ]
+            },
+            {
+                "id": 111,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "421",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Exceeds the specified size range of the pallet",
+                        "hint": "Operators please check the status of goods in the warehouse area"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "超出托盘规定尺寸范围",
+                        "hint": "操作人员请检查库区货物状态"
+                    }
+                ]
+            },
+            {
+                "id": 110,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "420",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The pallet exceeds the recognition angle range",
+                        "hint": "Operators please check the status of goods in the warehouse area"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "托盘超出识别角度范围",
+                        "hint": "操作人员请检查库区货物状态"
+                    }
+                ]
+            },
+            {
+                "id": 109,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "419",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The pallet exceeds the recognition translation range",
+                        "hint": "Operators please check the status of goods in the warehouse area"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "托盘超出识别平移范围",
+                        "hint": "操作人员请检查库区货物状态"
+                    }
+                ]
+            },
+            {
+                "id": 108,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "418",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "No free warehouse area is detected when releasing goods",
+                        "hint": "Operators please check the status of goods in the warehouse area"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "放货未检测到空闲库区",
+                        "hint": "操作人员请检查库区货物状态"
+                    }
+                ]
+            },
+            {
+                "id": 107,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "417",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "No goods in the warehouse were detected when picking up the goods",
+                        "hint": "Operators please check the status of goods in the warehouse area"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "取货未检测到库区货物",
+                        "hint": "操作人员请检查库区货物状态"
+                    }
+                ]
+            },
+            {
+                "id": 106,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "415",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Monitor charger completion signal timeout",
+                        "hint": "Operators please check whether the charger and vehicle charging board are normal"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "监测充电机完成信号超时",
+                        "hint": "操作人员请检测充电机和车载充电板是否正常"
+                    }
+                ]
+            },
+            {
+                "id": 105,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "414",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Charging process error, please power off and restart",
+                        "hint": "The operator checks the charging equipment and restarts the vehicle"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "充电过程错误,请断电重启",
+                        "hint": "操作人员检测充电设备,并重启车辆"
+                    }
+                ]
+            },
+            {
+                "id": 104,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "413",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Abnormal voltage and current",
+                        "hint": "Operators please check the connection status of the charger and vehicle charging board"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "电压与电流异常",
+                        "hint": "操作人员请检测充电机和车载充电板连接状态"
+                    }
+                ]
+            },
+            {
+                "id": 103,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "412",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Abnormal current",
+                        "hint": "Operators please check the connection status of the charger and vehicle charging board"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "电流异常",
+                        "hint": "操作人员请检测充电机和车载充电板连接状态"
+                    }
+                ]
+            },
+            {
+                "id": 102,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "411",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Abnormal voltage",
+                        "hint": "Operators please check the connection status of the charger and vehicle charging board"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "电压异常",
+                        "hint": "操作人员请检测充电机和车载充电板连接状态"
+                    }
+                ]
+            },
+            {
+                "id": 101,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "410",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Start charging error",
+                        "hint": "Operators please check whether the charger and vehicle charging board are normal"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "启动充电错误",
+                        "hint": "操作人员请检测充电机和车载充电板是否正常"
+                    }
+                ]
+            },
+            {
+                "id": 100,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "409",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Charger photoelectric signal shutdown timeout",
+                        "hint": "Operators please check whether the charger and vehicle charging board are normal"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "充电机光电信号关闭超时",
+                        "hint": "操作人员请检测充电机和车载充电板是否正常"
+                    }
+                ]
+            },
+            {
+                "id": 99,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "408",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "CAN communication connection timeout",
+                        "hint": "Operators please check whether the charger and vehicle charging board are normal"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "CAN通讯连接超时",
+                        "hint": "操作人员请检测充电机和车载充电板是否正常"
+                    }
+                ]
+            },
+            {
+                "id": 98,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "407",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Photoelectric signal detection timeout",
+                        "hint": "Operators please check whether the charger and vehicle charging board are normal"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "光电信号检测超时",
+                        "hint": "操作人员请检测充电机和车载充电板是否正常"
+                    }
+                ]
+            },
+            {
+                "id": 97,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "406",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Pallet not recognized",
+                        "hint": "Operators please check the status of goods in the warehouse area"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "未识别出托盘",
+                        "hint": "操作人员请检查库区货物状态"
+                    }
+                ]
+            },
+            {
+                "id": 96,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "405",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Please confirm whether the fork is lowered to the bottom",
+                        "hint": "Operators please check the status of the forks on the vehicle body"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "请确认叉尺是否降到底",
+                        "hint": "操作人员请检查车体叉尺状态"
+                    }
+                ]
+            },
+            {
+                "id": 95,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "404",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Dropped cargo detected",
+                        "hint": "Operators please check the status of the cargo on the vehicle body"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "检测到货物掉落",
+                        "hint": "操作人员请检查车体货物状态"
+                    }
+                ]
+            },
+            {
+                "id": 94,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "403",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Detected cargo status is empty",
+                        "hint": "Operators please check the status of goods in the warehouse area"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "检测到货物状态为空",
+                        "hint": "操作人员请检查库区货物状态"
+                    }
+                ]
+            },
+            {
+                "id": 93,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "402",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Path navigation activation failed",
+                        "hint": "Operators please check the status of the vehicle body"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "路径导航激活失败",
+                        "hint": "操作人员请检查车体状态"
+                    }
+                ]
+            },
+            {
+                "id": 92,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "401",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Failed to obtain device information",
+                        "hint": "Operators please check vehicle network"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "设备信息获取失败",
+                        "hint": "操作人员请检 查车辆网络"
+                    }
+                ]
+            },
+            {
+                "id": 91,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "301",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "motor block",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "电机阻滞",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 90,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "272",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "QR code fine-tuning failed",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "二维码微调失败",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 89,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "271",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "QR code information not scanned",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "未扫描到二维码信息",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 88,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "264",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "RTK initialization is not completed, please wait.",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "RTK初始化未完成请等待",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 87,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "263",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The rear navigation laser frequency is lower than the set threshold",
+                        "hint": "Operators please check the laser status after navigation"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "后导航激光频率低于设置阈值",
+                        "hint": "操作人员请检测后导航激光状态"
+                    }
+                ]
+            },
+            {
+                "id": 86,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "262",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Front navigation laser frequency is lower than the set threshold",
+                        "hint": "Operators please check laser status before navigation"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "前导航激光频率低于设置阈值",
+                        "hint": "操作人员请检测前导航激光状态"
+                    }
+                ]
+            },
+            {
+                "id": 85,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "261",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "IMU frequency is lower than the set threshold",
+                        "hint": "Operators please check the status of the IMU module"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "IMU频率低于设置阈值",
+                        "hint": "操作人员请检测IMU模块状态"
+                    }
+                ]
+            },
+            {
+                "id": 84,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "260",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Follow module communication exception",
+                        "hint": "Operators please check whether the following module is loose."
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "跟随模块通信异常",
+                        "hint": "操作人员请检测请检测跟随模块是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 83,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "259",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Smoke alarm triggered",
+                        "hint": "Operators remove surrounding obstacles"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "烟雾报警触发",
+                        "hint": "操作人员将周围障碍物清除"
+                    }
+                ]
+            },
+            {
+                "id": 82,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "258",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "RTK data abnormality",
+                        "hint": "Operators please check whether the RTK connection is loose."
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "RTK数据异常",
+                        "hint": "操作人员请检查RTK连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 81,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "256",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "No laser data",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "无激光数据",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 80,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "255",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "IMU has no data or IMU data detection is not enabled",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "IMU无数据或未启用IMU数据检测",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 79,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "254",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Wire pull encoder data abnormality",
+                        "hint": "Operators please check whether the cable encoder connection is loose."
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "拉线编码器数据异常",
+                        "hint": "操作人员请检查拉线编码器连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 78,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "253",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "QR code ID verification failed",
+                        "hint": "Operators please check the shelf QR code"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "QR二维码ID校验失败",
+                        "hint": "操作人员请检查货架二维码"
+                    }
+                ]
+            },
+            {
+                "id": 77,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "252",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The positioning node authorization failed, please check the authorization information.",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "定位节点授权未通过,请检查授权信息",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 76,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "251",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Navigation laser data is abnormal, please check whether the configuration is abnormal.",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "导航激光数据异常,请检查配置是否异常",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 75,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "250",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The navigation laser data is abnormal. Please ensure that the laser frequency is within 15-25Hz.",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "导航激光数据异常,请保证激光频率在15-25Hz以内",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 74,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "249",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Navigation laser data is abnormal, please check whether the configuration is abnormal.",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "导航激光数据异常,请检查配置是否配置异常",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 73,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "248",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The navigation laser data is abnormal and there are too few effective laser points. Please check whether the laser is normal.",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "导航激光数据异常,激光有效点过少，请检查激光是否正常",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 72,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "247",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The IMU data is abnormal, please check whether the IMU has calibrated zero offset.",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "IMU数据异常,请检查IMU是否标定零偏",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 71,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "246",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "IMU data is abnormal, please check whether the IMU is placed horizontally",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "IMU数据异常,请检查IMU是否水平放置",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 70,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "245",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Abnormal ultrasonic data for obstacle avoidance measured on the right",
+                        "hint": "Operators please check whether the ultrasonic cable is loose"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "右方中测避障超声波数据异常",
+                        "hint": "操作人员请检测超声波连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 69,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "244",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Obstacle avoidance ultrasonic data abnormality on the left side",
+                        "hint": "Operators please check whether the ultrasonic cable is loose"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "左方中测避障超声波数据异常",
+                        "hint": "操作人员请检测超声波连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 68,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "243",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Abnormal ultrasonic data for obstacle avoidance on the rear right side",
+                        "hint": "Operators please check whether the ultrasonic cable is loose"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "后方右侧避障超声波数据异常",
+                        "hint": "操作人员请检测超声波连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 67,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "242",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Abnormal ultrasonic data for obstacle avoidance on the rear left side",
+                        "hint": "Operators please check whether the ultrasonic cable is loose"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "后方左侧避障超声波数据异常",
+                        "hint": "操作人员请检测超声波连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 66,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "241",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Abnormal ultrasonic data for rear obstacle avoidance",
+                        "hint": "Operators please check whether the ultrasonic cable is loose"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "后方避障超声波数据异常",
+                        "hint": "操作人员请检测超声波连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 65,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "240",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Abnormal ultrasonic data for obstacle avoidance on the right",
+                        "hint": "Operators please check whether the ultrasonic cable is loose"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "右方避障超声波数据异常",
+                        "hint": "操作人员请检测超声波连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 64,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "239",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Abnormal ultrasonic data for obstacle avoidance on the left",
+                        "hint": "Operators please check whether the ultrasonic cable is loose"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "左方避障超声波数据异常",
+                        "hint": "操作人员请检测超声波连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 63,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "238",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Abnormal ultrasonic data for forward obstacle avoidance",
+                        "hint": "Operators please check whether the ultrasonic cable is loose"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "前方避障超声波数据异常",
+                        "hint": "操作人员请检测超声波连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 62,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "237",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Abnormal obstacle avoidance millimeter wave data in the middle part of the right side",
+                        "hint": "Operators please check whether the millimeter wave connection is loose."
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "右侧中部避障毫米波数据异常",
+                        "hint": "操作人员请检测毫米波连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 61,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "236",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Abnormal obstacle avoidance millimeter wave data in the middle left part",
+                        "hint": "Operators please check whether the millimeter wave connection is loose."
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "左侧中部避障毫米波数据异常",
+                        "hint": "操作人员请检测毫米波连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 60,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "235",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Abnormal obstacle avoidance millimeter wave data on the rear right side",
+                        "hint": "Operators please check whether the millimeter wave connection is loose."
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "后方右侧避障毫米波数据异常",
+                        "hint": "操作人员请检测毫米波连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 59,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "234",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Abnormal millimeter wave data for obstacle avoidance on the rear left side",
+                        "hint": "Operators please check whether the millimeter wave connection is loose."
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "后方左侧避障毫米波数据异常",
+                        "hint": "操作人员请检测毫米波连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 58,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "233",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Rear obstacle avoidance millimeter wave data anomaly",
+                        "hint": "Operators please check whether the millimeter wave connection is loose."
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "后方避障毫米波数据异常",
+                        "hint": "操作人员请检测毫米波连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 57,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "232",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Abnormal obstacle avoidance millimeter wave data on the right",
+                        "hint": "Operators please check whether the millimeter wave connection is loose."
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "右方避障毫米波数据异常",
+                        "hint": "操作人员请检测毫米波连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 56,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "231",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Abnormal obstacle avoidance millimeter wave data on the left",
+                        "hint": "Operators please check whether the millimeter wave connection is loose."
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "左方避障毫米波数据异常",
+                        "hint": "操作人员请检测毫米波连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 55,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "230",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Anomaly in forward obstacle avoidance millimeter wave data",
+                        "hint": "Operators please check whether the millimeter wave connection is loose."
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "前方避障毫米波数据异常",
+                        "hint": "操作人员请检测毫米波连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 54,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "229",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Abnormal rear obstacle avoidance laser data",
+                        "hint": "Operators please check whether the laser connection is loose"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "后方避障激光数据异常",
+                        "hint": "操作人员请检测激光连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 53,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "228",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The QR code camera data is abnormal.",
+                        "hint": "Operators please check whether the camera connection is loose"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "下二维码相机数据异常",
+                        "hint": "操作人员请检测相机连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 52,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "227",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Abnormal data on the QR code camera",
+                        "hint": "Operators please check whether the camera connection is loose"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "上二维码相机数据异常",
+                        "hint": "操作人员请检测相机连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 51,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "226",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Abnormal obstacle avoidance laser data in the middle part of the right side",
+                        "hint": "Operators please check whether the laser connection is loose"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "右侧中部避障激光数据异常",
+                        "hint": "操作人员请检测激光连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 50,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "225",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Abnormal obstacle avoidance laser data in the middle left part",
+                        "hint": "Operators please check whether the laser connection is loose"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "左侧中部避障激光数据异常",
+                        "hint": "操作人员请检测激光连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 49,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "224",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The right navigation laser data is abnormal",
+                        "hint": "Operators please check whether the laser connection is loose"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "右侧导航激光数据异常",
+                        "hint": "操作人员请检测激光连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 48,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "223",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Left navigation laser data abnormality",
+                        "hint": "Operators please check whether the laser connection is loose"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "左侧导航激光数据异常",
+                        "hint": "操作人员请检测激光连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 47,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "222",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Abnormal rear navigation laser data",
+                        "hint": "Operators please check whether the laser connection is loose"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "后方导航激光数据异常",
+                        "hint": "操作人员请检测激光连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 46,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "221",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Obstacle avoidance laser data on the right side of the fork tip is abnormal",
+                        "hint": "Operators please check whether the laser connection is loose"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "叉尖右侧避障激光数据异常",
+                        "hint": "操作人员请检测激光连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 45,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "220",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Abnormal obstacle avoidance laser data on the left side of the fork tip",
+                        "hint": "Operators please check whether the laser connection is loose"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "叉尖左侧避障激光数据异常",
+                        "hint": "操作人员请检测激光连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 44,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "219",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Low positioning confidence",
+                        "hint": "The operator checks whether the surrounding environment is abnormal"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "定位置信度低",
+                        "hint": "操作人员检查周围环境是否异常"
+                    }
+                ]
+            },
+            {
+                "id": 43,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "218",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Motor drive failure, press the reset button to recover",
+                        "hint": "Operator presses reset button to resume"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "电机驱动故障,按复位按钮恢复",
+                        "hint": "操作人员按复位按钮恢复"
+                    }
+                ]
+            },
+            {
+                "id": 42,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "217",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Abnormal obstacle avoidance laser data on the right side",
+                        "hint": "Operators please check whether the laser connection is loose"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "右侧避障激光数据异常",
+                        "hint": "操作人员请检测激光连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 41,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "216",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Abnormal laser data for obstacle avoidance on the left side",
+                        "hint": "Operators please check whether the laser connection is loose"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "左侧避障激光数据异常",
+                        "hint": "操作人员请检测激光连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 40,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "215",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Lost link with RCS",
+                        "hint": "Operators please check whether the vehicle is connected to the server"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "与RCS失去链接",
+                        "hint": "操作人员请检查车载是否连接服务器"
+                    }
+                ]
+            },
+            {
+                "id": 39,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "214",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The status of the cargo arrival sensor or fork gauge changes suddenly.",
+                        "hint": "Operator checks vehicle cargo status"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "货物到位传感器或叉尺状态突变",
+                        "hint": "操作人员检查车辆货物状态"
+                    }
+                ]
+            },
+            {
+                "id": 38,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "213",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Automatic hand switching - the tiller is not in the neutral position",
+                        "hint": "Operator checks vehicle tiller"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "手自动切换-舵柄不在中位",
+                        "hint": "操作人员检查车辆舵柄"
+                    }
+                ]
+            },
+            {
+                "id": 37,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "212",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Rear camera data abnormality",
+                        "hint": "Operators please check whether the rear camera connection is loose."
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "后方摄像头数据异常",
+                        "hint": "操作人员请检测后方相机连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 36,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "211",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "There is no vehicle, please add a vehicle first",
+                        "hint": "The operator checks the vehicle configuration"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "无车辆,请先添加车辆",
+                        "hint": "操作人员检查该车辆配置"
+                    }
+                ]
+            },
+            {
+                "id": 35,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "210",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Vehicle offline",
+                        "hint": "Operator checks the vehicle network"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "车辆离线",
+                        "hint": "操作人员检查该车辆网络"
+                    }
+                ]
+            },
+            {
+                "id": 34,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "209",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "IMU sensor abnormality",
+                        "hint": "Operators please check whether the IMU sensor connection is loose."
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "IMU传感器异常",
+                        "hint": "操作人员请检测IMU传感器连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 33,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "208",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Chassis communication abnormality",
+                        "hint": "Operators please check whether the chassis communication cable is loose."
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "底盘通信异常",
+                        "hint": "操作人员请检测底盘通讯连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 32,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "207",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The right camera data is abnormal",
+                        "hint": "Operators please check whether the camera connection is loose"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "右侧摄像头数据异常",
+                        "hint": "操作人员请检测相机连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 31,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "206",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The left camera data is abnormal",
+                        "hint": "Operators please check whether the camera connection is loose"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "左侧摄像头数据异常",
+                        "hint": "操作人员请检测相机连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 30,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "205",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The data of the camera on the left side of the fork tip is abnormal.",
+                        "hint": "Operators please check whether the camera connection is loose"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "叉尖左侧摄像头数据异常",
+                        "hint": "操作人员请检测相机连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 29,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "204",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The data of the camera on the right side of the fork tip is abnormal.",
+                        "hint": "Operators please check whether the camera connection is loose"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "叉尖右侧摄像头数据异常",
+                        "hint": "操作人员请检测相机连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 28,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "203",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Front camera data abnormality",
+                        "hint": "Operators please check whether the camera connection is loose"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "前方摄像头数据异常",
+                        "hint": "操作人员请检测相机连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 27,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "202",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Navigation obstacle avoidance laser data abnormality",
+                        "hint": "Operators please check whether the laser connection is loose"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "导航避障激光数据异常",
+                        "hint": "操作人员请检测激光连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 26,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "201",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Abnormal forward obstacle avoidance laser data",
+                        "hint": "Operators please check whether the laser connection is loose"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "前方避障激光数据异常",
+                        "hint": "操作人员请检测激光连线是否松动"
+                    }
+                ]
+            },
+            {
+                "id": 25,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "25",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "IO obstacle avoidance trigger",
+                        "hint": ""
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "IO避障触发",
+                        "hint": ""
+                    }
+                ]
+            },
+            {
+                "id": 24,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "24",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Right ultrasonic obstacle avoidance trigger",
+                        "hint": "Operators remove surrounding obstacles"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "右侧超声波避障触发",
+                        "hint": "操作人员将周围障碍物清除"
+                    }
+                ]
+            },
+            {
+                "id": 23,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "23",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Left ultrasonic obstacle avoidance trigger",
+                        "hint": "Operators remove surrounding obstacles"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "左侧超声波避障触发",
+                        "hint": "操作人员将周围障碍物清除"
+                    }
+                ]
+            },
+            {
+                "id": 22,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "22",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Fork tip right obstacle avoidance laser trigger",
+                        "hint": "Operators remove surrounding obstacles"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "叉尖右避障激光触发",
+                        "hint": "操作人员将周围障碍物清除"
+                    }
+                ]
+            },
+            {
+                "id": 21,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "21",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Fork tip left obstacle avoidance laser trigger",
+                        "hint": "Operators remove surrounding obstacles"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "叉尖左避障激光触发",
+                        "hint": "操作人员将周围障碍物清除"
+                    }
+                ]
+            },
+            {
+                "id": 20,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "20",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Rear navigation laser obstacle avoidance trigger",
+                        "hint": "Operators remove surrounding obstacles"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "后方导航激光避障触发",
+                        "hint": "操作人员将周围障碍物清除"
+                    }
+                ]
+            },
+            {
+                "id": 19,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "19",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Obstacle avoidance laser trigger on the right side of the fork tip",
+                        "hint": "Operators remove surrounding obstacles"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "叉尖右侧避障激光触发",
+                        "hint": "操作人员将周围障碍物清除"
+                    }
+                ]
+            },
+            {
+                "id": 18,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "18",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Obstacle avoidance laser trigger on the left side of the fork tip",
+                        "hint": "Operators remove surrounding obstacles"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "叉尖左侧避障激光触发",
+                        "hint": "操作人员将周围障碍物清除"
+                    }
+                ]
+            },
+            {
+                "id": 17,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "17",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Rear obstacle avoidance laser trigger",
+                        "hint": "Operators remove surrounding obstacles"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "后方避障激光触发",
+                        "hint": "操作人员将周围障碍物清除"
+                    }
+                ]
+            },
+            {
+                "id": 16,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "16",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Right obstacle avoidance laser trigger",
+                        "hint": "Operators remove surrounding obstacles"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "右侧避障激光触发",
+                        "hint": "操作人员将周围障碍物清除"
+                    }
+                ]
+            },
+            {
+                "id": 15,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "15",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Left obstacle avoidance laser trigger",
+                        "hint": "Operators remove surrounding obstacles"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "左侧避障激光触发",
+                        "hint": "操作人员将周围障碍物清除"
+                    }
+                ]
+            },
+            {
+                "id": 14,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "14",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Navigation laser obstacle avoidance trigger",
+                        "hint": "Operators remove surrounding obstacles"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "导航激光避障触发",
+                        "hint": "操作人员将周围障碍物清除"
+                    }
+                ]
+            },
+            {
+                "id": 13,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "13",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Rear camera obstacle avoidance trigger",
+                        "hint": "The operator clears the surrounding obstacles and presses the reset button"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "后方摄像头避障触发",
+                        "hint": "操作人员将周围障碍物清除,并按下复位按钮"
+                    }
+                ]
+            },
+            {
+                "id": 12,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "12",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Right camera obstacle avoidance trigger",
+                        "hint": "The operator clears the surrounding obstacles and presses the reset button"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "右侧摄像头避障触发",
+                        "hint": "操作人员将周围障碍物清除,并按下复位按钮"
+                    }
+                ]
+            },
+            {
+                "id": 11,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "11",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Left camera obstacle avoidance trigger",
+                        "hint": "The operator clears the surrounding obstacles and presses the reset button"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "左侧摄像头避障触发",
+                        "hint": "操作人员将周围障碍物清除,并按下复位按钮"
+                    }
+                ]
+            },
+            {
+                "id": 10,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "10",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The camera on the left side of the fork tip is triggered for obstacle avoidance",
+                        "hint": "The operator clears the surrounding obstacles and presses the reset button"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "叉尖左侧摄像头避障触发",
+                        "hint": "操作人员将周围障碍物清除,并按下复位按钮"
+                    }
+                ]
+            },
+            {
+                "id": 9,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "9",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "The camera on the right side of the fork tip is triggered for obstacle avoidance",
+                        "hint": "The operator clears the surrounding obstacles and presses the reset button"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "叉尖右侧摄像头避障触发",
+                        "hint": "操作人员将周围障碍物清除,并按下复位按钮"
+                    }
+                ]
+            },
+            {
+                "id": 8,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "8",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Front camera obstacle avoidance trigger",
+                        "hint": "The operator clears the surrounding obstacles and presses the reset button"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "前方摄像头避障触发",
+                        "hint": "操作人员将周围障碍物清除,并按下复位按钮"
+                    }
+                ]
+            },
+            {
+                "id": 7,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "7",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "traffic control",
+                        "hint": "Vehicle server control"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "交通管制",
+                        "hint": "车辆服务器管制"
+                    }
+                ]
+            },
+            {
+                "id": 6,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "6",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "low battery",
+                        "hint": "The operator charges the vehicle"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "低电量",
+                        "hint": "操作人员将车辆进行充电操作"
+                    }
+                ]
+            },
+            {
+                "id": 5,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "5",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Fork tip obstacle trigger",
+                        "hint": "The operator clears the surrounding obstacles and presses the reset button"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "叉尺尖端障碍物触发",
+                        "hint": "操作人员将周围障碍物清除,并按下复位按钮"
+                    }
+                ]
+            },
+            {
+                "id": 4,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "4",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Virtual obstacle trigger",
+                        "hint": "Please wait for the vehicle to be handed over"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "虚拟障碍物触发",
+                        "hint": "请等待车辆被交管"
+                    }
+                ]
+            },
+            {
+                "id": 3,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "3",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Anti-collision bar obstacle avoidance trigger",
+                        "hint": "The operator clears the surrounding obstacles and presses the reset button"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "防撞条避障触发",
+                        "hint": "操作人员将周围障碍物清除,并按下复位按钮"
+                    }
+                ]
+            },
+            {
+                "id": 2,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "2",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Emergency stop and obstacle avoidance trigger",
+                        "hint": "The operator releases the emergency stop"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "急停避障触发",
+                        "hint": "操作人员将急停松开"
+                    }
+                ]
+            },
+            {
+                "id": 1,
+                "createTime": "2026-08-19 15:01:41",
+                "updateTime": "2026-08-19 15:01:56",
+                "createUser": "system",
+                "updateUser": "system",
+                "alarmCode": "1",
+                "alarmCodeRecords": [
+                    {
+                        "locale": "en_US",
+                        "desc": "Forward obstacle avoidance laser trigger",
+                        "hint": "Operators remove surrounding obstacles"
+                    },
+                    {
+                        "locale": "zh_CN",
+                        "desc": "前方避障激光触发",
+                        "hint": "操作人员将周围障碍物清除"
+                    }
+                ]
+            }
+        ],
+        "total": 193,
+        "size": 1000,
+        "current": 1,
+        "pages": 1
+    }
+}
