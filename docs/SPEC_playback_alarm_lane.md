@@ -36,7 +36,7 @@ host/port 在 App 设置页可配置,默认 `10.11.2.208:50004`。
 | 7 | 生效范围 | **首版仅 ROS1 本地 bag 数据源**(`selectedSource.type === "file" && selectedSource.id === "ros1-local-bagfile"`);服务器"导出并打开"最终也进入该数据源。MCAP/ROS2 bag/ULog/远程文件/示例/实时连接暂不触发,待分别确认时间语义后再扩展 |
 | 8 | 网络限制 | **前端直接 fetch**;跨域 JSON POST 会触发 `OPTIONS` 预检。**实施修订(2026-08-13)**:服务端确认不支持 CORS 且不可修改,改为客户端规避——development 构建(web:serve)经 dev server 同源代理转发,桌面端 Electron 关闭 `webSecurity`;仅生产 Web 部署仍要求服务端实现 §4.1 的 CORS 契约或加反向代理(§12 风险记录在案) |
 | 9 | 配置入口 | **App 设置页通用页**新增"告警服务"设置,host + port 两个字段,AppConfiguration 持久化,默认 `10.11.2.208` / `50004` |
-| 10 | 点击行为 | **点击红色区间 seek 到该区间起始时刻** |
+| 10 | 点击行为 | ~~点击红色区间 seek 到该区间起始时刻~~ **修订(2026-08-20)**:点击红色区间 seek 到**鼠标所指时刻**(与 hover 同一套泳道 rect 坐标换算,裁剪在区间范围内) |
 | 11 | 查询失败 | **全局 toast 报错**(notistack `enqueueSnackbar`,variant error),泳道不渲染 |
 | 12 | 时间语义 | **确认 ROS1 bag 内消息时间为 Unix 墙钟**,与接口 ms 时间戳同源,直接换算;不得把此结论外推到 ULog 等其他格式 |
 | 13 | 无告警时 | **泳道完全隐藏**(查询成功但无告警、加载中、未加载数据源时均不渲染) |
@@ -273,10 +273,11 @@ bag 加载后"晚一拍"出现,控制行下移约 12px——一次性跳动,可�
     原始码,`alarm_hint` 无意见的码不产生片段)。
 - tooltip 非交互(`disableInteractive`),鼠标移出区间即关。
 
-### 6.4 点击 seek(决策 #10)
+### 6.4 点击 seek(决策 #10,2026-08-20 修订)
 
-点击红色区间 → `onSeek(fromMillis(interval.startMs))`(复用 PlaybackControls 传入的
-`seek`)。点击后是否继续播放由现有播放器行为决定,不做额外 pause/play 处理。
+点击红色区间 → `onSeek(fromMillis(点击时刻))`:用 `event.clientX` 与整条泳道的
+`getBoundingClientRect()` 反推 bag 时刻(与 hover 同一套换算),裁剪到当前区间范围后 seek
+(复用 PlaybackControls 传入的 `seek`)。点击后是否继续播放由现有播放器行为决定,不做额外 pause/play 处理。
 
 ### 6.5 设置页(决策 #9/#17)
 

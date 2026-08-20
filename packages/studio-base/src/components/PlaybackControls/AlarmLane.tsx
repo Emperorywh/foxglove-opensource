@@ -112,7 +112,7 @@ function findNearestSample(samples: AlarmSample[], timeMs: number): AlarmSample 
 }
 
 /**
- * 单个红色告警区间:hover 展示最近采样详情 tooltip,点击 seek 到区间起始时刻
+ * 单个红色告警区间:hover 展示最近采样详情 tooltip,点击 seek 到鼠标所指时刻
  */
 function AlarmIntervalBlock(props: {
   interval: AlarmInterval;
@@ -132,36 +132,55 @@ function AlarmIntervalBlock(props: {
   const leftFraction = (interval.startMs - bagStartMs) / spanMs;
   const widthFraction = (interval.endMs - interval.startMs) / spanMs;
 
-  const onMouseMove = useCallback(
-    (event: React.MouseEvent) => {
+  /**
+   * 由鼠标 clientX 经整条泳道的 bounding rect 反推 bag 时刻,并裁剪到当前区间范围。
+   * 不能用区间元素的 offsetX,否则 2px 最小宽度、边框和嵌套节点会使时间映射失真。
+   * hover 取最近采样与点击 seek 共用此换算,保证两处时间语义一致。
+   */
+  const timeMsFromClientX = useCallback(
+    (clientX: number): number | undefined => {
       const lane = laneRef.current;
       if (!lane) {
-        return;
+        return undefined;
       }
-      // 用整条泳道的 bounding rect 反推 bag 时刻(不能用区间元素的 offsetX,
-      // 否则 2px 最小宽度、边框和嵌套节点会使时间映射失真),并裁剪到当前区间范围
       const rect = lane.getBoundingClientRect();
       if (rect.width <= 0) {
-        return;
+        return undefined;
       }
-      const fraction = (event.clientX - rect.left) / rect.width;
-      const timeMs = Math.min(
+      const fraction = (clientX - rect.left) / rect.width;
+      return Math.min(
         Math.max(bagStartMs + fraction * spanMs, interval.startMs),
         interval.endMs,
       );
-      setHoverSample(findNearestSample(interval.samples, timeMs));
     },
     [laneRef, bagStartMs, spanMs, interval],
+  );
+
+  const onMouseMove = useCallback(
+    (event: React.MouseEvent) => {
+      const timeMs = timeMsFromClientX(event.clientX);
+      if (timeMs == undefined) {
+        return;
+      }
+      setHoverSample(findNearestSample(interval.samples, timeMs));
+    },
+    [timeMsFromClientX, interval.samples],
   );
 
   const onMouseLeave = useCallback(() => {
     setHoverSample(undefined);
   }, []);
 
-  const onClick = useCallback(() => {
-    // 决策 #10:点击红色区间 seek 到该区间起始时刻
-    onSeek(fromMillis(interval.startMs));
-  }, [onSeek, interval.startMs]);
+  const onClick = useCallback(
+    (event: React.MouseEvent) => {
+      // 点击红色区间 seek 到鼠标所指时刻(与 hover 同一套坐标换算,裁剪在区间范围内)
+      const timeMs = timeMsFromClientX(event.clientX);
+      if (timeMs != undefined) {
+        onSeek(fromMillis(timeMs));
+      }
+    },
+    [timeMsFromClientX, onSeek],
+  );
 
   // tooltip 字段表:固定顺序在前,未知字段追加末尾;alarmCodes 是内部解析产物,不展示
   const detailsRows = useMemo(() => {
