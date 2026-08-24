@@ -149,7 +149,35 @@ function handleExportedFileRequest(
   return true;
 }
 
-/** Serve the web build on an ephemeral loopback port. Returns the bound port. */
+/**
+ * 固定回环端口:localStorage 按完整 origin(含端口)隔离,端口每次随机会让渲染
+ * 进程拿到空存储——所有本地设置(AppConfiguration:导出 host/路径、告警配置、
+ * 布局等)重启即丢。仅当该端口被占用时才回退随机端口(此时设置将不可见,并告警)。
+ */
+const STATIC_SERVER_PORT = 46720;
+
+/**
+ * Listen on the given port; resolves undefined when it cannot be bound (busy),
+ * so the caller can retry with another port. The error listener is removed on
+ * success — Node http servers allow listen() again after a failed attempt.
+ */
+function listenOnce(server: ReturnType<typeof createServer>, port: number): Promise<number | undefined> {
+  return new Promise((resolve) => {
+    const onError = (): void => {
+      server.removeListener("listening", onListening);
+      resolve(undefined);
+    };
+    const onListening = (): void => {
+      server.removeListener("error", onError);
+      resolve((server.address() as AddressInfo).port);
+    };
+    server.once("error", onError);
+    server.once("listening", onListening);
+    server.listen(port, "127.0.0.1");
+  });
+}
+
+/** Serve the web build on a fixed loopback port. Returns the bound port. */
 async function startStaticServer(root: string): Promise<number> {
   const server = createServer((req, res) => {
     void (async () => {
@@ -192,12 +220,17 @@ async function startStaticServer(root: string): Promise<number> {
     });
   });
 
-  return await new Promise((resolve, reject) => {
-    server.once("error", reject);
-    server.listen(0, "127.0.0.1", () => {
-      resolve((server.address() as AddressInfo).port);
-    });
-  });
+  let port = await listenOnce(server, STATIC_SERVER_PORT);
+  if (port == undefined) {
+    console.warn(
+      `[static-server] port ${STATIC_SERVER_PORT} unavailable; falling back to an ephemeral port (localStorage origin changes — persisted settings will not be visible this session)`,
+    );
+    port = await listenOnce(server, 0);
+  }
+  if (port == undefined) {
+    throw new Error("static server failed to listen");
+  }
+  return port;
 }
 
 /**
