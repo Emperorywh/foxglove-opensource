@@ -43,6 +43,12 @@ ELECTRON_MIRROR="https://npmmirror.com/mirrors/electron/" yarn install
 
 ## 备注
 
+- `desktop/package.json` 顶层的 `productName` 决定 Electron 运行时的 userData 与单实例
+  锁：打包版（portable/安装版）使用 `%APPDATA%\Foxglove Studio`，portable 与安装版
+  因此共用同一份配置、同时只能开一个（第二个会静默退出）；开发实例由 `main.ts`
+  隔离到 `%APPDATA%\Foxglove Studio (dev)`，可与打包版同时运行。缺失顶层
+  `productName` 时 Electron 会退回 `name`（"desktop"），曾导致打包 exe 在有 dev
+  实例运行的机器上秒退（exit 0、无任何日志）。
 - 未注入官方的 `desktopBridge` 全局对象，因此 UI 与 web 版完全一致（设置页仍会显示
   “下载桌面版”链接）。`isDesktopApp()` 为 true 时启用的 package:// 拉取、自动更新等
   功能依赖闭源桥接实现，故未启用。

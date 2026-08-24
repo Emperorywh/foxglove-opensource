@@ -498,6 +498,13 @@ async function createMainWindow(bridgeUrl: string): Promise<void> {
   await win.loadURL(devServerUrl ?? `http://127.0.0.1:${port}/`);
 }
 
+// 打包版与开发实例默认共用同一个 userData(取自 package.json 的 name/productName),
+// 单实例锁因此互相冲突:谁后启动谁静默退出(窗口一闪都没有)。这里把开发实例的
+// userData 单独隔离,使 `yarn desktop:dev` 与打包出的 exe 可以同时运行。
+if (!app.isPackaged) {
+  app.setPath("userData", path.join(app.getPath("appData"), "Foxglove Studio (dev)"));
+}
+
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
 if (!gotSingleInstanceLock) {
   app.quit();
