@@ -1,10 +1,102 @@
-diff --git a/templates/snap/snapcraft.yaml b/templates/snap/snapcraft.yaml
-index 08ed9604b8e0e6b8901dcd253c2e793983da989e..f0d706d3c0b276d5a2f23fa5ac400b11dc22a594 100644
---- a/templates/snap/snapcraft.yaml
-+++ b/templates/snap/snapcraft.yaml
-@@ -1,4 +1,4 @@
--base: core18
-+base: core20
- grade: stable
- confinement: strict
- parts:
+diff --git a/templates/nsis/portable.nsi b/templates/nsis/portable.nsi
+index e5436bb..b538b75 100644
+--- a/templates/nsis/portable.nsi
++++ b/templates/nsis/portable.nsi
+@@ -30,13 +30,30 @@ Section
+     HideWindow
+   !endif
+ 
+-  StrCpy $INSTDIR "$PLUGINSDIR\app"
+-  !ifdef UNPACK_DIR_NAME
+-    StrCpy $INSTDIR "$TEMP\${UNPACK_DIR_NAME}"
+-  !endif
++  # Stock behavior: extract into a fixed %TEMP%\${UNPACK_DIR_NAME} dir on every
++  # launch and delete it again on exit. Every launch of the same exe therefore
++  # shares (and wipes) one directory: a second launch — which exits immediately
++  # because the app holds a single-instance lock — deletes files under the
++  # still-running first instance, and antivirus / storage-sense cleaners go after
++  # freshly written %TEMP% exes and dlls (ffmpeg.dll above all). Either way
++  # electron.exe ends up without ffmpeg.dll, which Windows reports as "code
++  # execution cannot continue because ffmpeg.dll was not found". Instead: unpack
++  # once per version into a persistent per-user dir, verify it on every launch
++  # (self-healing after quarantine or a partial extraction), publish new runtimes
++  # with an atomic rename so running instances are never touched, and never
++  # delete the live runtime.
++  StrCpy $R9 "$LOCALAPPDATA\${PRODUCT_NAME}Portable\app-${VERSION}"
++
++  # Fast path — this version's runtime is complete, run it directly.
++  ${If} ${FileExists} "$R9\${APP_EXECUTABLE_FILENAME}"
++  ${AndIf} ${FileExists} "$R9\ffmpeg.dll"
++    Goto run
++  ${endIf}
+ 
+-  RMDir /r $INSTDIR
+-  SetOutPath $INSTDIR
++  # Repair — unpack into a private staging dir, never into the (possibly live) runtime.
++  System::Call 'kernel32::GetTickCount()i .R8'
++  StrCpy $INSTDIR "$LOCALAPPDATA\${PRODUCT_NAME}Portable\stage-$R8"
++  SetOutPath "$INSTDIR"
+ 
+   !ifdef APP_DIR_64
+     !ifdef APP_DIR_ARM64
+@@ -74,6 +91,29 @@ Section
+     !endif
+   !endif
+ 
++  SetOutPath "$LOCALAPPDATA\${PRODUCT_NAME}Portable"
++
++  # Publish: retire a leftover runtime of this version, then rename staging into
++  # place. If the old dir is still in use or another instance published
++  # concurrently, run from staging this once — the next launch completes the repair.
++  RMDir /r "$R9"
++  ${IfNot} ${FileExists} "$R9\*.*"
++    ClearErrors
++    Rename "$INSTDIR" "$R9"
++    ${If} ${Errors}
++      ClearErrors
++      ${If} ${FileExists} "$R9\${APP_EXECUTABLE_FILENAME}"
++        # Another instance published between our RMDir and Rename — keep theirs.
++        RMDir /r "$INSTDIR"
++      ${Else}
++        StrCpy $R9 "$INSTDIR"
++      ${endIf}
++    ${endIf}
++  ${Else}
++    StrCpy $R9 "$INSTDIR"
++  ${endIf}
++
++run:
+   System::Call 'Kernel32::SetEnvironmentVariable(t, t)i ("PORTABLE_EXECUTABLE_DIR", "$EXEDIR").r0'
+   System::Call 'Kernel32::SetEnvironmentVariable(t, t)i ("PORTABLE_EXECUTABLE_FILE", "$EXEPATH").r0'
+   System::Call 'Kernel32::SetEnvironmentVariable(t, t)i ("PORTABLE_EXECUTABLE_APP_FILENAME", "${APP_FILENAME}").r0'
+@@ -83,9 +123,27 @@ Section
+     BgImage::Destroy
+   !endif
+ 
+-	ExecWait "$INSTDIR\${APP_EXECUTABLE_FILENAME} $R0" $0
++  SetOutPath "$R9"
++  ExecWait '"$R9\${APP_EXECUTABLE_FILENAME}" $R0' $0
+   SetErrorLevel $0
+ 
+-  SetOutPath $EXEDIR
+-	RMDir /r $INSTDIR
++  # Housekeeping, best effort — files locked by still-running instances simply
++  # survive until a later launch: stale staging dirs from interrupted runs and
++  # runtime dirs of other versions go away; the runtime this process just used
++  # (and this version's) is never touched.
++  SetOutPath "$LOCALAPPDATA\${PRODUCT_NAME}Portable"
++  FindFirst $1 $2 "$LOCALAPPDATA\${PRODUCT_NAME}Portable\stage-*.*"
++  ${DoWhile} $2 != ""
++    RMDir /r "$LOCALAPPDATA\${PRODUCT_NAME}Portable\$2"
++    FindNext $1 $2
++  ${Loop}
++  FindClose $1
++  FindFirst $1 $2 "$LOCALAPPDATA\${PRODUCT_NAME}Portable\app-*.*"
++  ${DoWhile} $2 != ""
++    ${If} $2 != "app-${VERSION}"
++      RMDir /r "$LOCALAPPDATA\${PRODUCT_NAME}Portable\$2"
++    ${endIf}
++    FindNext $1 $2
++  ${Loop}
++  FindClose $1
+ SectionEnd

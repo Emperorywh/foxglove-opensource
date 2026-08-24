@@ -271,8 +271,25 @@ function errorText(t: TFunction<"openDialog">, code: FailureCode): string {
   }
 }
 
+/**
+ * 预览阶段的时间区间校验失败:end 被钳制到机器人当前时间后仍早于 start(机器人
+ * 时钟落后超过所选窗口/时区与本地不一致)。携带机器人当前时间供友好提示——此前
+ * 该场景以裸 Error 落到 IO_ERROR 兜底,被误报为「传输中断」。
+ */
+class InvalidTimeRangeError extends Error {
+  /** 机器人当前本地时间(展示格式 `YYYY-MM-DD HH:mm:ss`)。 */
+  public readonly robotNowDisplay: string;
+  public constructor(robotNowDisplay: string) {
+    super("clamped end precedes start");
+    this.robotNowDisplay = robotNowDisplay;
+  }
+}
+
 /** 连接失败提示:认证失败时提醒联系公司技术人员(凭据不外显,应用户要求)。 */
 function connectErrorText(t: TFunction<"openDialog">, err: unknown): string {
+  if (err instanceof InvalidTimeRangeError) {
+    return t("serverExportErrorInvalidTimeRange", { time: err.robotNowDisplay });
+  }
   const code = err instanceof ServerExportError ? err.code : "IO_ERROR";
   const detail = err instanceof Error && err.message !== "" ? ` — ${err.message}` : "";
   const hint = code === "AUTH_FAILED" ? ` ${t("serverExportAuthFailedHint")}` : "";
@@ -618,6 +635,11 @@ export default function ServerExport(): JSX.Element {
       const requestedEndKey = normalizeNaiveTime(endLocal)!;
       const clampedEnd = requestedEndKey > robotNowNaive;
       const endKey = clampedEnd ? robotNowNaive : requestedEndKey;
+      // 钳制后 start > end:区间已无意义(机器人时钟落后超过所选窗口/时区差异),
+      // 带机器人当前时间抛出,由 connectErrorText 给出可操作的提示。
+      if (startKey > endKey) {
+        throw new InvalidTimeRangeError(formatNaiveDisplay(robotNowNaive));
+      }
 
       const bagListing = await client.list(bagPath.trim());
       const selection = selectBagsForExport({

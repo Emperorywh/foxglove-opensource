@@ -62,6 +62,8 @@ export const openDialog: Partial<TypeOptions["resources"]["openDialog"]> = {
   serverExportErrorCanceled: "已取消",
   serverExportErrorDisconnected: "连接已断开",
   serverExportErrorHostUnreachable: "无法连接服务器，请检查 IP/端口与网络",
+  serverExportErrorInvalidTimeRange:
+    "起始时间晚于机器人当前时间（{{time}}），请调整时间范围，或检查机器人时钟/时区是否正确",
   serverExportErrorIo: "传输中断",
   serverExportErrorLocalWrite: "写入本地文件失败，请检查磁盘空间与目录权限",
   serverExportErrorNoSuchPath: "路径不存在",

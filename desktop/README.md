@@ -20,6 +20,7 @@ Electron 壳：把 `web` 构建产物打包成 Windows 桌面应用（exe）。
 ```sh
 yarn desktop:dist        # 完整流程：web 生产构建 + NSIS 安装包（输出 desktop/out/）
 yarn desktop:dist:dir    # 同上，但只输出免安装目录（打包更快，用于验证）
+yarn desktop:dist:portable  # 单文件免安装 exe（out/Foxglove Studio-<版本>-portable.exe，直接发给别人双击）
 yarn desktop:start       # 用现有 web/.webpack 直接启动 Electron（一次性构建后启动）
 
 # 开发调试（推荐）：渲染进程热更新 + 主进程/preload 改动自动重启 Electron
@@ -59,6 +60,28 @@ ELECTRON_MIRROR="https://npmmirror.com/mirrors/electron/" yarn install
   180x180；`public/favicon.ico` 本身只有 74x51 且实为改了扩展名的 PNG，不能直接用）。
 - 渲染进程沙箱开启（contextIsolation + sandbox，无 nodeIntegration），外部链接在
   系统浏览器中打开。
+
+## 单文件 portable 版的运行时机制（修复"找不到 ffmpeg.dll"）
+
+electron-builder 原版 portable 模板每次启动都把整个应用解压到 `%TEMP%\<构建期固定
+ksuid>` 目录、退出即删。同一 exe 的多次启动因此共用并互删同一个目录：应用持有单实例
+锁，第二次启动会立刻退出并把目录删掉——正在运行的第一个实例随后再拉起任何子进程
+（GPU/renderer 重启、crashpad 等）就找不到 `ffmpeg.dll`；杀软与"存储感知"也偏爱清理
+`%TEMP%` 里新写入的未签名 exe/dll（`ffmpeg.dll` 又是最常被恶意软件冒名的文件名）。
+两者都表现为偶发报错"由于找不到 ffmpeg.dll，无法继续执行代码"。
+
+修复方式：`patches/app-builder-lib.patch` 重写了 `templates/nsis/portable.nsi`
+（经根 package.json 的 `resolutions` 接线，`yarn install` 时自动应用）：
+
+- 运行时按版本解压到持久目录 `%LOCALAPPDATA%\Foxglove StudioPortable\app-<版本>`，
+  退出不删除；下次启动校验 exe 与 `ffmpeg.dll` 存在后直接运行（冷启动 ~7s 解压，
+  热启动 <1s——原版每次启动都要全量解压）。
+- 校验失败（杀软隔离、上次解压中断）自动重新解压自愈；新运行时先解压到私有
+  `stage-<tick>` 目录再 rename 发布，正在运行的实例的文件永不被触碰。
+- 退出时顺手清理其他版本的旧运行时目录与残留 stage 目录（被占用文件留待下次）。
+
+升级给新版本 exe 后首次运行会解压新的 `app-<新版本>` 目录并在退出时清掉旧版本目录，
+无需手动清理。
 
 ## 自动更新（GitHub Releases）
 

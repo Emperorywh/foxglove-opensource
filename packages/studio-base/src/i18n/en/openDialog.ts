@@ -68,6 +68,8 @@ export const openDialog = {
   serverExportErrorDisconnected: "Connection lost",
   serverExportErrorHostUnreachable:
     "Cannot connect to the server — check the IP, port, and network",
+  serverExportErrorInvalidTimeRange:
+    "Start time is later than the robot's current time ({{time}}) — adjust the time range or check the robot clock and timezone",
   serverExportErrorIo: "Transfer interrupted",
   serverExportErrorLocalWrite:
     "Failed to write the local file — check disk space and directory permissions",
