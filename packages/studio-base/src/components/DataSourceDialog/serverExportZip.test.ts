@@ -286,9 +286,9 @@ describe("createZipWriter — abort", () => {
 });
 
 describe("robotExportZipFileName (spec §7.1)", () => {
-  it("derives the name from naive start/end keys", () => {
-    expect(robotExportZipFileName("20260820090000", "20260820100000")).toBe(
-      "robot-export-20260820-090000-20260820-100000.zip",
+  it("derives the name from host and naive start/end keys", () => {
+    expect(robotExportZipFileName("192.168.1.100", "20260820090000", "20260820100000")).toBe(
+      "robot-export-192.168.1.100-20260820-090000-20260820-100000.zip",
     );
   });
 });

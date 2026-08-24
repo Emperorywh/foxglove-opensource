@@ -68,6 +68,9 @@ function verifyPanels(panels: readonly PanelInfo[]): void {
   }
 }
 
+// Only these panel types are offered in the panel selection UI.
+const allowedPanelTypes = new Set(["3D", "RawMessages"]);
+
 type Props = {
   onPanelSelect: (arg0: PanelSelection) => void;
   onDragStart?: () => void;
@@ -100,7 +103,9 @@ export const PanelCatalog = forwardRef<HTMLDivElement, Props>(function PanelCata
 
   const namespacedPanels = useMemo(() => {
     // Remove namespace if panel title is unique.
-    const panels = panelCatalog.getPanels();
+    const panels = panelCatalog
+      .getPanels()
+      .filter((panel) => allowedPanelTypes.has(panel.type));
     const countByTitle = _.countBy(panels, (panel) => panel.title);
     return panels.map((panel) => {
       if ((countByTitle[panel.title] ?? 0) > 1) {

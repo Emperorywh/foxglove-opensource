@@ -74,7 +74,7 @@
 | SPEC_server_file_export_zip §1/§6(ServerExport UI) | 连接 → 浏览(单层列表/过滤/勾选) → 导出 → 汇总;≥2 文件自动打 zip | **推翻 UI 层**:单一任务表单(§9);不再有逐文件勾选、过滤框、bag 徽标、表头全选、跨目录选择 |
 | SPEC_server_file_browser 全文(UI) | 面包屑/前进后退/子目录导航 | **移除**(浏览 UI 下线);其 v3 协议产物(`dir` 条目、realpath 规范化、symlink statFollow)保留并服务于日志递归(§4.3) |
 | SPEC_server_file_export_zip 决策 Z15/§5.6 | 不支持 ZIP64,≥4GiB−64MiB 前置禁用 + 写入时硬护栏 | **推翻**:重写 zip writer 支持 ZIP64(决策 #13,§8);`MAX_ZIP_BYTES` 前置禁用与硬护栏移除 |
-| SPEC_server_file_export_zip 决策 Z10/§5.4(zip 命名) | `export-YYYYMMDD-HHmmss.zip` | **修订**:`robot-export-<startLocal>-<endLocal>.zip`(机器人时区起止),重名自动 ` (1)` 沿用(§7.1) |
+| SPEC_server_file_export_zip 决策 Z10/§5.4(zip 命名) | `export-YYYYMMDD-HHmmss.zip` | **修订**:`robot-export-<host>-<startLocal>-<endLocal>.zip`(host 为服务器 IP;机器人时区起止),重名自动 ` (1)` 沿用(§7.1) |
 | SPEC_server_file_export_zip §6.1/原规格 §8.3(导出并打开) | 恰好勾选 1 个 .bag → 裸导出后 `selectSource("ros1-local-bagfile")` | **移除**;由汇总页「立即导入播放」导出包闭环替代(决策 #24,§9.4) |
 | SPEC_server_file_export_zip 决策 Z17(不兼容立场)+ SPEC_server_file_browser §4(现行版本号出处) | PROTOCOL_VERSION = 3(现行代码) | **修订**:bump 到 **4**,新增 `serverTime` 消息;不做兼容,双向不匹配报"版本不兼容"(§4.1) |
 | SPEC_server_bag_export §15 / SPEC_server_file_export_zip §10(明确不做:多 bag 合并播放) | 不做 | **移除该条**:本规格实现播放层归并(§11.3);其余"不做"项继续不做(§17) |
@@ -144,12 +144,12 @@ connect/list/download/ack/cancel/fileStart/fileEnd/二进制帧/sshClosed/错误
 
 ### 7.1 命名
 
-`robot-export-<startLocal:YYYYMMDD-HHmmss>-<endLocal:YYYYMMDD-HHmmss>.zip`(取用户输入的机器人时区 naive 时间,钳制后的 end);重名探测自动 ` (1)`(沿用原逻辑,`resolveZipNameConflict` 保留);同一会话重试沿用同一 zip 名(沿用决策 Z14)。
+`robot-export-<host>-<startLocal:YYYYMMDD-HHmmss>-<endLocal:YYYYMMDD-HHmmss>.zip`(host 为表单服务器 IP,区分来源机器人;时间取用户输入的机器人时区 naive 时间,钳制后的 end);重名探测自动 ` (1)`(沿用原逻辑,`resolveZipNameConflict` 保留);同一会话重试沿用同一 zip 名(沿用决策 Z14)。
 
 ### 7.2 内部布局(决策 #18)
 
 ```
-robot-export-20260820-090000-20260820-100000.zip
+robot-export-192.168.1.100-20260820-090000-20260820-100000.zip
 ├── bags/2026-08-20-08-57-32_0.bag      ← predecessor(若选出)
 ├── bags/2026-08-20-09-07-32_1.bag
 ├── bags/…

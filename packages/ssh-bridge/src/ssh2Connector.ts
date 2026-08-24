@@ -3,7 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import { Client, SFTPWrapper, Stats } from "ssh2";
-import { PassThrough, Readable } from "stream";
+import { Readable } from "stream";
 
 import {
   ConnectOptions,
@@ -227,20 +227,10 @@ export class Ssh2Session implements SshSession {
   }
 
   public openReadStream(path: string): Readable {
-    const raw = this.#sftp.createReadStream(path, {
-      highWaterMark: MAX_BINARY_FRAME_BYTES,
-    });
-    // Proxy through a PassThrough so ssh2 errors can be remapped to SshErrors exactly
-    // once, and so that destroying the returned stream also stops the SFTP read.
-    const proxy = new PassThrough({ highWaterMark: MAX_BINARY_FRAME_BYTES });
-    raw.on("error", (err: unknown) => {
-      proxy.destroy(mapSftpError(err));
-    });
-    proxy.on("close", () => {
-      raw.destroy();
-    });
-    raw.pipe(proxy);
-    return proxy;
+    // 并行预读流取代 ssh2 的串行 ReadStream(串行把吞吐钉在「单请求字节 ÷ RTT」,
+    // 实测 0.85 MB/s;见 ParallelPrefetchReadStream 头注释)。错误经 mapSftpError
+    // 映射后恰好一次地从流上抛出,destroy 即停读并关句柄——沿用本方法的既有契约。
+    return new ParallelPrefetchReadStream(this.#sftp, path);
   }
 
   public close(): void {
@@ -261,6 +251,192 @@ export class Ssh2Session implements SshSession {
         resolve(stats);
       });
     });
+  }
+}
+
+/**
+ * 并行预读参数(2026-08-24 基准,机器人 10.11.2.208 / Wi-Fi):服务端单次 READ
+ * 实际返回上限 64KB(请求更大也只回 64KB),16 路并发即可把单条 SSH 通道打到链路
+ * 上限——串行 0.85 MB/s,16×64KB ≈ 7.2 MB/s(再往上 32×32KB 仅 +0.1,链路饱和)。
+ */
+const PREFETCH_CHUNK_BYTES = 64 * 1024;
+const PREFETCH_CONCURRENCY = 16;
+
+export type PrefetchOptions = {
+  /** 单次 SFTP READ 请求的字节数(生产 64KB;测试注入小值驱动边界)。 */
+  chunkBytes?: number;
+  /** 未完成 READ 请求的并发上限(生产 16)。 */
+  concurrency?: number;
+};
+
+/**
+ * 并行按序 SFTP 预读流(取代 ssh2 的串行 `createReadStream`)。
+ *
+ * ssh2 的 ReadStream 同一时刻只保持一个未完成的 SFTP READ(其 `_read` 在回调
+ * `push()` 之后才会被 Node 再次调用),吞吐被钉在「单请求字节 ÷ RTT」,与链路
+ * 带宽无关。本流改为:并发发出多条按 offset 递增的 READ,完成结果乱序进入
+ * pending 表,**只把连续前缀按序交付**——对外仍是一条保序流,桥接的
+ * pause/resume、ack 窗口与取消语义零改动。
+ *
+ * - EOF:open 后先 `fstat` 取文件大小作为精确终点(不发投机读);短读/零读作为
+ *   文件收缩时的兜底边界,乱序完成下取各次完成的最小值;
+ * - 内存上限 = 在飞 + 待交付 ≤ 并发 × 块大小(1MB),加上流自身高水位 1MB;
+ *   交付停滞(push 返回 false)后读前门槛停止发新请求,不会无界堆积;
+ * - 错误:任一 READ 失败即 `destroy(mapSftpError(err))` 恰好一次;destroy 后
+ *   迟到的完成回调全部忽略,句柄尽力关闭。
+ */
+export class ParallelPrefetchReadStream extends Readable {
+  #sftp: SFTPWrapper;
+  #path: string;
+  #chunkBytes: number;
+  #concurrency: number;
+  #readaheadBytes: number;
+  #opening = false;
+  #handle: Buffer | undefined;
+  /** destroy 已发生:迟到的 open/fstat/read 回调据此忽略。 */
+  #stopped = false;
+  #nextIssueOffset = 0;
+  #nextDeliverOffset = 0;
+  /** 终点 offset:fstat 大小,或文件收缩时短读/零读给出的更小边界。 */
+  #endOffset: number | undefined;
+  #outstanding = 0;
+  #pending = new Map<number, Buffer>();
+  #pushedEnd = false;
+
+  public constructor(sftp: SFTPWrapper, path: string, opts?: PrefetchOptions) {
+    super({ highWaterMark: MAX_BINARY_FRAME_BYTES });
+    this.#sftp = sftp;
+    this.#path = path;
+    this.#chunkBytes = opts?.chunkBytes ?? PREFETCH_CHUNK_BYTES;
+    this.#concurrency = opts?.concurrency ?? PREFETCH_CONCURRENCY;
+    this.#readaheadBytes = this.#chunkBytes * this.#concurrency;
+  }
+
+  public override _read(): void {
+    if (this.#handle == undefined) {
+      this.#openHandle();
+      return;
+    }
+    this.#deliverPending();
+    this.#pump();
+  }
+
+  #openHandle(): void {
+    if (this.#opening) {
+      return;
+    }
+    this.#opening = true;
+    this.#sftp.open(this.#path, "r", (err, handle) => {
+      this.#opening = false;
+      if (this.#stopped) {
+        if (err == undefined) {
+          this.#closeHandle(handle);
+        }
+        return;
+      }
+      if (err != undefined) {
+        this.destroy(mapSftpError(err));
+        return;
+      }
+      // 句柄先登记:fstat 期间发生 destroy 时 _destroy 能顺手关掉它。
+      this.#handle = handle;
+      this.#sftp.fstat(handle, (statErr, stats) => {
+        if (this.#stopped) {
+          return;
+        }
+        if (statErr != undefined) {
+          this.destroy(mapSftpError(statErr));
+          return;
+        }
+        this.#endOffset = Math.min(this.#endOffset ?? Number.MAX_SAFE_INTEGER, stats.size);
+        this.#deliverPending();
+        this.#pump();
+      });
+    });
+  }
+
+  #pump(): void {
+    const handle = this.#handle;
+    if (this.#stopped || handle == undefined) {
+      return;
+    }
+    while (
+      this.#outstanding < this.#concurrency &&
+      (this.#endOffset == undefined || this.#nextIssueOffset < this.#endOffset) &&
+      this.#nextIssueOffset - this.#nextDeliverOffset < this.#readaheadBytes
+    ) {
+      const offset = this.#nextIssueOffset;
+      this.#nextIssueOffset += this.#chunkBytes;
+      this.#outstanding += 1;
+      const buffer = Buffer.allocUnsafe(this.#chunkBytes);
+      this.#sftp.read(handle, buffer, 0, buffer.length, offset, (err, got) => {
+        this.#onReadComplete(offset, buffer, err, got);
+      });
+    }
+  }
+
+  #onReadComplete(offset: number, buffer: Buffer, err: Error | undefined, got: number): void {
+    this.#outstanding -= 1;
+    if (this.#stopped) {
+      return;
+    }
+    if (err != undefined) {
+      this.destroy(mapSftpError(err));
+      return;
+    }
+    if (got < buffer.length) {
+      // 短读/零读:文件比 fstat 报告的小(收缩)。取最小值,交付到该边界即止。
+      const boundary = offset + got;
+      this.#endOffset = Math.min(this.#endOffset ?? Number.MAX_SAFE_INTEGER, boundary);
+    }
+    if (got > 0) {
+      this.#pending.set(offset, buffer.subarray(0, got));
+    }
+    this.#deliverPending();
+    this.#pump();
+  }
+
+  #deliverPending(): void {
+    if (this.#stopped || this.#pushedEnd) {
+      return;
+    }
+    for (;;) {
+      const chunk = this.#pending.get(this.#nextDeliverOffset);
+      if (chunk == undefined) {
+        break;
+      }
+      this.#pending.delete(this.#nextDeliverOffset);
+      this.#nextDeliverOffset += chunk.length;
+      if (!this.push(chunk)) {
+        // 流缓冲到高水位:剩余留在 pending,等消费端排空后再次 _read 时交付。
+        break;
+      }
+    }
+    if (this.#endOffset != undefined && this.#nextDeliverOffset >= this.#endOffset) {
+      this.#pushedEnd = true;
+      this.push(null); // eslint-disable-line no-restricted-syntax -- Node 流协议:push(null) 即 EOF
+    }
+  }
+
+  // Node 基类签名以 null 表示"无错误的 destroy";保持一致以可赋值(仓库禁 null 的
+  // 例外处理见 webpack.ts 的 ReactNull 同款 disable)。
+  public override _destroy(
+    err: Error | null, // eslint-disable-line no-restricted-syntax -- Node 基类签名
+    callback: (error?: Error | null) => void, // eslint-disable-line no-restricted-syntax -- Node 基类签名
+  ): void {
+    this.#stopped = true;
+    this.#pending.clear();
+    const handle = this.#handle;
+    this.#handle = undefined;
+    if (handle != undefined) {
+      this.#closeHandle(handle);
+    }
+    callback(err);
+  }
+
+  #closeHandle(handle: Buffer): void {
+    // 尽力而为:会话已断时回调可能永不到来,不做任何记账。
+    this.#sftp.close(handle, () => {});
   }
 }
 

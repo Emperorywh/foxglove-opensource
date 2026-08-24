@@ -3,17 +3,14 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
-import VisibilityIcon from "@mui/icons-material/Visibility";
-import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import {
   Alert,
   Button,
   Checkbox,
   CircularProgress,
   FormControlLabel,
-  IconButton,
-  InputAdornment,
   LinearProgress,
+  MenuItem,
   TextField,
   Typography,
 } from "@mui/material";
@@ -64,9 +61,10 @@ import {
  * 机器人数据导出包 UI(docs/SPEC_robot_export_package.md §9):任务式表单 →
  * 预览 → 导出 → 汇总 的单一路径(决策 #9,取代旧浏览式导出)。
  *
- * - Step A 任务表单:IP/SSH 端口/告警端口/用户名/密码(记住+明文/密文切换)/bag
- *   路径/日志路径/起止时间(机器人时区)/本地导出目录/包含日志(默认勾选);除
- *   时间/目录/包含日志外全部持久化(决策 #10,含密码——应用户要求);
+ * - Step A 任务表单:IP(无默认值,输入即缓存)/SSH 端口/告警端口/授权分组(账号
+ *   密码不外显,两套固定凭据对应两个分组,应用户要求)/bag 路径/日志路径/起止
+ *   时间(机器人时区)/本地导出目录/包含日志(默认勾选);除时间/目录/包含日志
+ *   外全部持久化(决策 #10);
  * - Step B 预览(决策 #11):连接 → serverTime(失败按决策 #27 回退)→ list bag
  *   目录 → §6 筛选 → 日志递归(§4.3)→ 告警试连(非致命);
  * - Step C 导出(决策 #28):立即并发发起正式告警查询,与 SFTP 下载并行;logs
@@ -78,6 +76,19 @@ import {
 const DEFAULT_SSH_PORT = "22";
 const DEFAULT_BAG_PATH = "/home/rxx/bkbagfiles";
 const DEFAULT_LOG_PATH = "/var/log/robot";
+/**
+ * 授权认证(应用户要求:账号/密码不外显,改为「授权认证」下拉;两套密码对应两个账号)。
+ * 凭据只在此处定义,不落 UI、不持久化明文;持久化的只有分组 id。
+ */
+const AUTH_GROUPS = [
+  { id: "1", labelKey: "serverExportAuthGroupOne", username: "rxx", password: "x" },
+  { id: "2", labelKey: "serverExportAuthGroupTwo", username: "rxx", password: "Rxx@r0b0t" },
+] as const;
+
+/** 分组 id → 凭据;未知/缺失的持久化值回退第一组。 */
+function credentialsFor(id: string | undefined): { username: string; password: string } {
+  return AUTH_GROUPS.find((group) => group.id === id) ?? AUTH_GROUPS[0];
+}
 
 /** 日志递归深度上限(§4.3):触及上限的子树跳过并计数,不静默截断。 */
 const LOG_RECURSION_DEPTH_LIMIT = 16;
@@ -179,7 +190,9 @@ const useStyles = makeStyles()((theme) => ({
     height: "100%",
     gap: theme.spacing(2),
     overflowY: "auto",
-    padding: theme.spacing(3, 4, 0),
+    // 顶部留出弹窗右上角关闭按钮的高度(offset 24 + 按钮 48),首行表单从其下方
+    // 开始,避免"告警端口"输入框与图标叠在一起导致难以点中。
+    padding: theme.spacing(9, 4, 0),
   },
   monoName: {
     overflow: "hidden",
@@ -256,6 +269,14 @@ function errorText(t: TFunction<"openDialog">, code: FailureCode): string {
     default:
       return t("serverExportErrorUnknown");
   }
+}
+
+/** 连接失败提示:认证失败时提醒联系公司技术人员(凭据不外显,应用户要求)。 */
+function connectErrorText(t: TFunction<"openDialog">, err: unknown): string {
+  const code = err instanceof ServerExportError ? err.code : "IO_ERROR";
+  const detail = err instanceof Error && err.message !== "" ? ` — ${err.message}` : "";
+  const hint = code === "AUTH_FAILED" ? ` ${t("serverExportAuthFailedHint")}` : "";
+  return `${errorText(t, code)}${detail}${hint}`;
 }
 
 function joinRemotePath(dir: string, name: string): string {
@@ -346,8 +367,9 @@ export default function ServerExport(): JSX.Element {
   const supportsLocalExport = desktopExportFs() != undefined || "showDirectoryPicker" in window;
 
   // ----- Step A 表单状态 -----
-  // IP 与告警服务 host 双向联动(沿用);告警端口与 robotAlarm.port 双向联动(§3)。
-  const { host: configuredHost, setHost: saveConfiguredHost, port: configuredAlarmPort, setPort: saveConfiguredAlarmPort } =
+  // 告警端口与 robotAlarm.port 双向联动(§3);host 连接成功时单向写回告警配置
+  // (沿用联动),但表单 IP 自身无默认值、输入即缓存(独立键,不吃告警 host 默认值)。
+  const { setHost: saveConfiguredHost, port: configuredAlarmPort, setPort: saveConfiguredAlarmPort } =
     useRobotAlarmConfiguration();
   const [step, setStep] = useState<Step>("form");
   // 持久化字段的初始值:AppConfiguration 同步读取(useAppConfigurationValue 首渲染
@@ -355,8 +377,11 @@ export default function ServerExport(): JSX.Element {
   const [storedSshPort, persistSshPort] = useAppConfigurationValue<string>(
     AppSetting.ROBOT_EXPORT_SSH_PORT,
   );
-  const [storedUsername, persistUsername] = useAppConfigurationValue<string>(
-    AppSetting.ROBOT_EXPORT_USERNAME,
+  const [storedAuthGroup, persistAuthGroup] = useAppConfigurationValue<string>(
+    AppSetting.ROBOT_EXPORT_AUTH_GROUP,
+  );
+  const [storedHost, persistHost] = useAppConfigurationValue<string>(
+    AppSetting.ROBOT_EXPORT_HOST,
   );
   const [storedBagPath, persistBagPath] = useAppConfigurationValue<string>(
     AppSetting.ROBOT_EXPORT_BAG_PATH,
@@ -364,16 +389,11 @@ export default function ServerExport(): JSX.Element {
   const [storedLogPath, persistLogPath] = useAppConfigurationValue<string>(
     AppSetting.ROBOT_EXPORT_LOG_PATH,
   );
-  const [storedPassword, persistPassword] = useAppConfigurationValue<string>(
-    AppSetting.ROBOT_EXPORT_PASSWORD,
-  );
-  const [host, setHost] = useState(configuredHost);
+  const [host, setHost] = useState(storedHost ?? "");
   const [sshPort, setSshPort] = useState(storedSshPort ?? DEFAULT_SSH_PORT);
   const [alarmPort, setAlarmPort] = useState(configuredAlarmPort);
-  const [username, setUsername] = useState(storedUsername ?? "");
-  // 密码一并记住(决策 #10 修订:应用户要求),输入框支持明文/密文切换。
-  const [password, setPassword] = useState(storedPassword ?? "");
-  const [showPassword, setShowPassword] = useState(false);
+  // 授权分组(账号/密码隐藏):仅持久化分组 id,凭据在 AUTH_GROUPS 内部解析。
+  const [authGroupId, setAuthGroupId] = useState(storedAuthGroup ?? AUTH_GROUPS[0].id);
   const [bagPath, setBagPath] = useState(storedBagPath ?? DEFAULT_BAG_PATH);
   const [logPath, setLogPath] = useState(storedLogPath ?? DEFAULT_LOG_PATH);
   const [startLocal, setStartLocal] = useState(() => datetimeLocalNow(-60 * 60 * 1000));
@@ -511,18 +531,19 @@ export default function ServerExport(): JSX.Element {
     const client = makeClient();
     await client.open();
     try {
+      const credentials = credentialsFor(authGroupId);
       await client.connectSsh({
         host: host.trim(),
         port: Number(sshPort),
-        username: username.trim(),
-        password,
+        username: credentials.username,
+        password: credentials.password,
       });
     } catch (err) {
       client.disconnect();
       throw err;
     }
     return client;
-  }, [makeClient, host, sshPort, username, password]);
+  }, [makeClient, host, sshPort, authGroupId]);
 
   const validateForm = useCallback((): boolean => {
     const errors: Record<string, string> = {};
@@ -537,12 +558,6 @@ export default function ServerExport(): JSX.Element {
       if (!Number.isInteger(portNum) || portNum < 1 || portNum > 65535) {
         errors[key] = t("serverExportValidationPort");
       }
-    }
-    if (username.trim() === "") {
-      errors.username = t("serverExportValidationRequired");
-    }
-    if (password === "") {
-      errors.password = t("serverExportValidationRequired");
     }
     for (const [key, value] of [
       ["bagPath", bagPath],
@@ -562,7 +577,7 @@ export default function ServerExport(): JSX.Element {
     }
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
-  }, [host, sshPort, alarmPort, username, password, bagPath, logPath, startLocal, endLocal, t]);
+  }, [host, sshPort, alarmPort, bagPath, logPath, startLocal, endLocal, t]);
 
   /**
    * 预览数据采集(§9.2):serverTime(失败按决策 #27 回退)→ list bag 目录 →
@@ -669,30 +684,29 @@ export default function ServerExport(): JSX.Element {
     [startLocal, endLocal, bagPath, logPath, host, alarmPort],
   );
 
-  /** 连接成功时写回持久化(决策 #10,含密码)+ host/告警端口联动(§3)。 */
+  /** 连接成功时写回持久化(决策 #10;IP 输入即缓存,此处顺带 trim 归一)+ 告警联动(§3)。 */
   const persistSettings = useCallback(async () => {
     void saveConfiguredHost(host.trim());
     void saveConfiguredAlarmPort(alarmPort);
     void persistSshPort(sshPort);
-    void persistUsername(username.trim());
+    void persistAuthGroup(authGroupId);
+    void persistHost(host.trim());
     void persistBagPath(bagPath.trim());
     void persistLogPath(logPath.trim());
-    void persistPassword(password);
   }, [
     host,
     alarmPort,
     sshPort,
-    username,
+    authGroupId,
     bagPath,
     logPath,
-    password,
     saveConfiguredHost,
     saveConfiguredAlarmPort,
     persistSshPort,
-    persistUsername,
+    persistAuthGroup,
+    persistHost,
     persistBagPath,
     persistLogPath,
-    persistPassword,
   ]);
 
   const onConnectAndPreview = useCallback(async () => {
@@ -720,10 +734,7 @@ export default function ServerExport(): JSX.Element {
       setStep("preview");
     } catch (err) {
       replaceClient(undefined);
-      const code = err instanceof ServerExportError ? err.code : "IO_ERROR";
-      setAlertText(
-        `${errorText(t, code)}${err instanceof Error && err.message !== "" ? ` — ${err.message}` : ""}`,
-      );
+      setAlertText(connectErrorText(t, err));
     } finally {
       setBusy(false);
     }
@@ -827,7 +838,7 @@ export default function ServerExport(): JSX.Element {
         zipNameRef.current = undefined; // 新导出会话换新名(§7.1)
       }
       zipNameRef.current ??= await resolveZipNameConflict(
-        robotExportZipFileName(data.startKey, data.endKey),
+        robotExportZipFileName(host.trim(), data.startKey, data.endKey),
         async (name) => await target.exists(name),
       );
       const zipName = zipNameRef.current;
@@ -1163,10 +1174,7 @@ export default function ServerExport(): JSX.Element {
       }
       await runExport(data, { retry: true });
     } catch (err) {
-      const code = err instanceof ServerExportError ? err.code : "IO_ERROR";
-      setAlertText(
-        `${errorText(t, code)}${err instanceof Error && err.message !== "" ? ` — ${err.message}` : ""}`,
-      );
+      setAlertText(connectErrorText(t, err));
       setStep("form");
     } finally {
       setBusy(false);
@@ -1298,6 +1306,7 @@ export default function ServerExport(): JSX.Element {
             disabled={!supportsLocalExport || busy}
             onChange={(event) => {
               setHost(event.target.value);
+              void persistHost(event.target.value);
             }}
             fullWidth
             variant="outlined"
@@ -1327,50 +1336,24 @@ export default function ServerExport(): JSX.Element {
             variant="outlined"
           />
         </Stack>
-        <Stack direction="row" gap={2}>
-          <TextField
-            label={t("serverExportUsername")}
-            value={username}
-            error={fieldErrors.username != undefined}
-            helperText={fieldErrors.username}
-            disabled={!supportsLocalExport || busy}
-            onChange={(event) => {
-              setUsername(event.target.value);
-            }}
-            fullWidth
-            variant="outlined"
-            autoComplete="username"
-          />
-          <TextField
-            label={t("serverExportPassword")}
-            type={showPassword ? "text" : "password"}
-            value={password}
-            error={fieldErrors.password != undefined}
-            helperText={fieldErrors.password}
-            disabled={!supportsLocalExport || busy}
-            onChange={(event) => {
-              setPassword(event.target.value);
-            }}
-            fullWidth
-            variant="outlined"
-            autoComplete="new-password"
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    edge="end"
-                    aria-label={t("serverExportTogglePassword")}
-                    onClick={() => {
-                      setShowPassword(!showPassword);
-                    }}
-                  >
-                    {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
-        </Stack>
+        {/* 授权认证:账号/密码不外显,下拉仅呈现账号名;凭据由 AUTH_GROUPS 内部解析。 */}
+        <TextField
+          select
+          label={t("serverExportAuthGroup")}
+          value={authGroupId}
+          disabled={!supportsLocalExport || busy}
+          onChange={(event) => {
+            setAuthGroupId(event.target.value);
+          }}
+          fullWidth
+          variant="outlined"
+        >
+          {AUTH_GROUPS.map((group) => (
+            <MenuItem key={group.id} value={group.id}>
+              {t(group.labelKey)}
+            </MenuItem>
+          ))}
+        </TextField>
         <TextField
           label={t("serverExportBagPath")}
           value={bagPath}
@@ -1636,7 +1619,7 @@ export default function ServerExport(): JSX.Element {
             label={<Typography variant="body2">{t("serverExportIncludeLogs")}</Typography>}
           />
           <Typography variant="body2" color="text.secondary" className={classes.monoName}>
-            {t("serverExportConnectedTo", { username, host })}
+            {t("serverExportConnectedTo", { host })}
           </Typography>
         </div>
         {renderFooter(

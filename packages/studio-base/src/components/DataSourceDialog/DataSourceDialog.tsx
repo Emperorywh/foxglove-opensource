@@ -30,9 +30,14 @@ type DataSourceDialogProps = {
   backdropAnimation?: boolean;
 };
 
-const useStyles = makeStyles()((theme) => ({
+// serverExport 视图放宽/加高弹窗:表单首行(IP/SSH 端口/告警端口)才不会挤到
+// 右上角绝对定位的关闭图标,图标更好展示也更容易点中。
+const useStyles = makeStyles<{ view: DataSourceDialogItem | undefined }>()((theme, { view }) => ({
   paper: {
-    maxWidth: `calc(min(${theme.breakpoints.values.md}px, 100% - ${theme.spacing(4)}))`,
+    maxWidth: `calc(min(${
+      view === "serverExport" ? theme.breakpoints.values.lg : theme.breakpoints.values.md
+    }px, 100% - ${theme.spacing(4)}))`,
+    minHeight: view === "serverExport" ? theme.spacing(80) : undefined,
   },
   closeButton: {
     position: "absolute",
@@ -46,10 +51,10 @@ const selectDataSourceDialog = (store: WorkspaceContextStore) => store.dialogs.d
 
 export function DataSourceDialog(props: DataSourceDialogProps): JSX.Element {
   const { backdropAnimation } = props;
-  const { classes } = useStyles();
   const { availableSources, selectSource } = usePlayerSelection();
   const { dialogActions } = useWorkspaceActions();
   const { activeDataSource, item: activeView } = useWorkspaceStore(selectDataSourceDialog);
+  const { classes } = useStyles({ view: activeView });
 
   const isMounted = useMountedState();
 

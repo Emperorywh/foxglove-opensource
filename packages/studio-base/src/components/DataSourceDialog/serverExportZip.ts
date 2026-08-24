@@ -410,15 +410,17 @@ export function createZipWriter(
 }
 
 /**
- * `robot-export-<startLocal>-<endLocal>.zip`(SPEC §7.1):机器人时区 naive 起止
- * (钳制后的 end),形如 `robot-export-20260820-090000-20260820-100000.zip`。
+ * `robot-export-<host>-<startLocal>-<endLocal>.zip`(SPEC §7.1):host 为表单
+ * 服务器 IP(区分来源机器人),机器人时区 naive 起止(钳制后的 end),形如
+ * `robot-export-192.168.1.100-20260820-090000-20260820-100000.zip`。
  */
 export function robotExportZipFileName(
+  host: string,
   startKey: string,
   endKey: string,
 ): string {
   const seg = (key: string) => `${key.slice(0, 8)}-${key.slice(8)}`;
-  return `robot-export-${seg(startKey)}-${seg(endKey)}.zip`;
+  return `robot-export-${host}-${seg(startKey)}-${seg(endKey)}.zip`;
 }
 
 /**
