@@ -4,7 +4,6 @@
 
 export const desktopWindow = {
   advanced: "Advanced",
-  checkForUpdates: "Check for Updates…",
   edit: "Edit",
   file: "File",
   inspectSharedWorker: "Inspect Shared Worker…",

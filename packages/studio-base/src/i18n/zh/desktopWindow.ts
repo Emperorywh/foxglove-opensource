@@ -6,7 +6,6 @@ import { TypeOptions } from "i18next";
 
 export const desktopWindow: Partial<TypeOptions["resources"]["desktopWindow"]> = {
   advanced: "高级",
-  checkForUpdates: "检查更新……",
   edit: "编辑",
   file: "文件",
   inspectSharedWorker: "检查共享工作者……",

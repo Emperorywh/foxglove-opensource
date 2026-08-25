@@ -8,7 +8,6 @@ export enum AppSetting {
   TIMEZONE = "timezone",
   TIME_FORMAT = "time.format",
   MESSAGE_RATE = "messageRate",
-  UPDATES_ENABLED = "updates.enabled",
   LANGUAGE = "language",
 
   // ROS

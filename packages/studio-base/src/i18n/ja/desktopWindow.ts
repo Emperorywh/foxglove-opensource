@@ -6,7 +6,6 @@ import { TypeOptions } from "i18next";
 
 export const desktopWindow: Partial<TypeOptions["resources"]["desktopWindow"]> = {
   advanced: "高度な設定",
-  checkForUpdates: "更新を確認する…",
   edit: "編集",
   file: "ファイル",
   inspectSharedWorker: "共有ワーカーを検査する…",

@@ -9,10 +9,8 @@ import QuestionAnswerOutlinedIcon from "@mui/icons-material/QuestionAnswerOutlin
 import WebIcon from "@mui/icons-material/Web";
 import {
   Autocomplete,
-  Checkbox,
   Divider,
   FormControl,
-  FormControlLabel,
   FormLabel,
   MenuItem,
   Select,
@@ -306,31 +304,6 @@ export function MessageFramerate(): React.ReactElement {
         ))}
       </Select>
     </Stack>
-  );
-}
-
-export function AutoUpdate(): React.ReactElement {
-  const [updatesEnabled = true, setUpdatedEnabled] = useAppConfigurationValue<boolean>(
-    AppSetting.UPDATES_ENABLED,
-  );
-
-  const { classes } = useStyles();
-
-  return (
-    <>
-      <FormLabel>Updates:</FormLabel>
-      <FormControlLabel
-        className={classes.formControlLabel}
-        control={
-          <Checkbox
-            className={classes.checkbox}
-            checked={updatesEnabled}
-            onChange={(_event, checked) => void setUpdatedEnabled(checked)}
-          />
-        }
-        label="Automatically install updates"
-      />
-    </>
   );
 }
 

@@ -1,6 +1,6 @@
 {
   "name": "desktop",
-  "version": "1.86.0",
+  "version": "1.86.1",
   "description": "Foxglove Studio desktop (Electron shell around the web build)",
   "productName": "Foxglove Studio",
   "license": "MPL-2.0",
@@ -17,14 +17,12 @@
     "dev": "node dev.mjs",
     "dist": "node build.mjs && electron-builder",
     "dist:dir": "node build.mjs && electron-builder --dir",
-    "dist:portable": "node build.mjs && electron-builder --win portable",
-    "release": "node build.mjs && electron-builder --publish always"
+    "dist:portable": "node build.mjs && electron-builder --win portable"
   },
   "devDependencies": {
     "@types/node": "20.10.0",
     "electron": "28.3.3",
     "electron-builder": "24.13.3",
-    "electron-updater": "6.1.8",
     "esbuild": "0.20.2",
     "typescript": "5.3.3"
   },
@@ -32,11 +30,6 @@
     "appId": "com.foxglove.studio",
     "productName": "Foxglove Studio",
     "npmRebuild": false,
-    "publish": {
-      "provider": "github",
-      "owner": "Emperorywh",
-      "repo": "foxglove-opensource"
-    },
     "directories": {
       "output": "out",
       "buildResources": "resources"

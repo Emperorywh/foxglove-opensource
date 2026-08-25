@@ -3,7 +3,6 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
-import { autoUpdater } from "electron-updater";
 import { WriteStream, createReadStream, createWriteStream } from "fs";
 import { readFile, stat, unlink } from "fs/promises";
 import { createServer, IncomingMessage, ServerResponse } from "http";
@@ -260,8 +259,6 @@ async function startBridge(): Promise<string> {
   return `ws://127.0.0.1:${DEFAULT_PORT}`;
 }
 
-const UPDATE_CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000; // 4 hours
-
 /**
  * Server-file export: the renderer cannot use the File System Access API's write path —
  * Electron denies write grants, so createWritable() always rejects with NotAllowedError.
@@ -455,44 +452,6 @@ function setupServerExportIpc(): void {
   });
 }
 
-/**
- * Check GitHub Releases for updates (configured via the `publish` field in package.json).
- * Downloads in the background; when a new version is ready, asks the user to restart.
- * Only runs in the packaged app — dev builds have no app-update.yml.
- */
-function setupAutoUpdates(): void {
-  if (!app.isPackaged) {
-    return;
-  }
-  autoUpdater.autoDownload = true;
-  autoUpdater.on("error", (err) => {
-    console.warn(`[updater] ${String(err)}`);
-  });
-  autoUpdater.on("update-downloaded", (info) => {
-    void (async () => {
-      const { response } = await dialog.showMessageBox({
-        type: "info",
-        title: "更新已就绪",
-        message: `新版本 ${info.version} 已下载完成`,
-        detail: "重启应用以完成更新。",
-        buttons: ["立即重启", "稍后"],
-        defaultId: 0,
-        cancelId: 1,
-      });
-      if (response === 0) {
-        autoUpdater.quitAndInstall();
-      }
-    })();
-  });
-  const check = (): void => {
-    void autoUpdater.checkForUpdates().catch((err: unknown) => {
-      console.warn(`[updater] check failed: ${String(err)}`);
-    });
-  };
-  check();
-  setInterval(check, UPDATE_CHECK_INTERVAL_MS);
-}
-
 async function createMainWindow(bridgeUrl: string): Promise<void> {
   const port = await startStaticServer(webRoot());
   staticServerPort = port;
@@ -558,7 +517,6 @@ if (!gotSingleInstanceLock) {
     const bridgeUrl = await startBridge();
     await createMainWindow(bridgeUrl);
     mainWindow = BrowserWindow.getAllWindows()[0];
-    setupAutoUpdates();
 
     app.on("activate", () => {
       // macOS: re-create the window when the dock icon is clicked.

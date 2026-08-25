@@ -51,8 +51,8 @@ ELECTRON_MIRROR="https://npmmirror.com/mirrors/electron/" yarn install
   `productName` 时 Electron 会退回 `name`（"desktop"），曾导致打包 exe 在有 dev
   实例运行的机器上秒退（exit 0、无任何日志）。
 - 未注入官方的 `desktopBridge` 全局对象，因此 UI 与 web 版完全一致（设置页仍会显示
-  “下载桌面版”链接）。`isDesktopApp()` 为 true 时启用的 package:// 拉取、自动更新等
-  功能依赖闭源桥接实现，故未启用。
+  “下载桌面版”链接）。`isDesktopApp()` 为 true 时启用的 package:// 拉取等功能依赖
+  闭源桥接实现，故未启用。
 - 自定义图标：把 `icon.ico`（含 256x256 帧）放到 `desktop/resources/` 下，electron-builder
   会自动使用（NSIS 安装/卸载程序图标对应 `installerIcon.ico` / `uninstallerIcon.ico`）。
   也可以直接从 PNG 生成多尺寸 ico：`yarn workspace desktop icon [source.png]`，默认源为
@@ -82,27 +82,6 @@ ksuid>` 目录、退出即删。同一 exe 的多次启动因此共用并互删�
 
 升级给新版本 exe 后首次运行会解压新的 `app-<新版本>` 目录并在退出时清掉旧版本目录，
 无需手动清理。
-
-## 自动更新（GitHub Releases）
-
-应用启动时（及之后每 4 小时）会向 `Emperorywh/foxglove-opensource` 的 Releases 查询
-`latest.yml`；发现新版本后后台下载，完成后弹窗提示重启更新。仅在安装版中生效
-（`yarn desktop:start` 的开发实例不检查更新）。
-
-发布新版本的流程：
-
-```sh
-# 1. 修改 desktop/package.json 里的 version（如 1.86.0 -> 1.87.0）
-
-# 2. 构建并上传到 GitHub（需要 repo 权限的 Personal Access Token）
-GH_TOKEN=<your-token> yarn desktop:release
-
-# 3. 到 GitHub Releases 页面把 electron-builder 创建的草稿发布出去
-#    发布后，旧版本客户端下次启动即会检测到更新
-```
-
-`--publish always` 会上传 `latest.yml`、安装包和 blockmap。未签名的应用可正常
-自动更新，但 Windows SmartScreen 仍会对下载的安装包给出提示（与首次安装相同）。
 
 ## 已知问题：winCodeSign 解压失败
 
