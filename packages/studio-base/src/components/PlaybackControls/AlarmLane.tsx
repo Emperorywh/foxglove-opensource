@@ -2,7 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { Tooltip } from "@mui/material";
+import { PopperProps, Tooltip } from "@mui/material";
 import { Fragment, useCallback, useMemo, useRef, useState } from "react";
 import { makeStyles } from "tss-react/mui";
 
@@ -41,6 +41,13 @@ const FIELD_ORDER = [
   "reset_button",
 ];
 
+// popper 默认的 preventOverflow 只防主轴(top/bottom)溢出;开 altAxis 让 tooltip 在
+// 鼠标靠近视口左右边缘时整体水平移回视口内(tether: false 允许完全脱离鼠标锚点)。
+// 必须是模块级常量:popper 以 modifiers 引用为重建依赖,而本组件随鼠标移动频繁重渲。
+const POPPER_MODIFIERS: NonNullable<PopperProps["modifiers"]> = [
+  { name: "preventOverflow", options: { altAxis: true, tether: false, padding: 8 } },
+];
+
 const useStyles = makeStyles()((theme) => ({
   // 泳道轨道:高 8px、全宽、背景透明,上下各留 2px 间距;短区间由 overflow 裁剪(§6.1)
   track: {
@@ -68,17 +75,23 @@ const useStyles = makeStyles()((theme) => ({
     display: "grid",
     gridTemplateColumns: "auto auto",
     columnGap: theme.spacing(1),
-    alignItems: "center",
-    whiteSpace: "nowrap",
+    // 值可能多行(见 itemValue 的限宽换行),键与值首行对齐
+    alignItems: "start",
     fontFamily: theme.typography.body1.fontFamily,
   },
   itemKey: {
     fontSize: "0.7rem",
     opacity: 0.7,
     textAlign: "end",
+    // 字段名单行展示,换行交给值列
+    whiteSpace: "nowrap",
   },
   itemValue: {
     fontSize: "0.75rem",
+    // 长文本(如 alarm_hint)限宽换行,避免 tooltip 被撑到超出视口;
+    // anywhere(而非 break-word)会同时收缩 min-content,grid auto 列才能正确收窄
+    maxWidth: 320,
+    overflowWrap: "anywhere",
   },
 }));
 
@@ -234,6 +247,7 @@ function AlarmIntervalBlock(props: {
       placement="top"
       followCursor
       disableInteractive
+      PopperProps={{ modifiers: POPPER_MODIFIERS }}
     >
       <div
         className={classes.interval}
